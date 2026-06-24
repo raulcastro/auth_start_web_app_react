@@ -76,7 +76,8 @@ function Favicons() {
       { rel: 'icon', type: 'image/png', sizes: '32x32', href: `${baseUrl}/favicon-32x32.png` },
       { rel: 'icon', type: 'image/png', sizes: '16x16', href: `${baseUrl}/favicon-16x16.png` },
       { rel: 'shortcut icon', href: `${baseUrl}/favicon.ico` },
-      { rel: 'manifest', href: `${baseUrl}/site.webmanifest` },
+      { rel: 'manifest', href: `${STORAGE_BASE_URL}/favicon-manifest` },
+    ];
     ];
 
     // Remove existing favicon tags
