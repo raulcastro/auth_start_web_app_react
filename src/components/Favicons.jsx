@@ -7,6 +7,9 @@ import { STORAGE_BASE_URL } from '../services/api';
  * Dynamically injects favicon tags based on backend configuration.
  * If generated favicons exist in the backend, uses them.
  * Otherwise, falls back to the default favicon.
+ * 
+ * Note: Uses image loading strategy instead of fetch to avoid CORS issues
+ * with static files in storage.
  */
 function Favicons() {
   const [faviconsLoaded, setFaviconsLoaded] = useState(false);
@@ -14,11 +17,11 @@ function Favicons() {
   useEffect(() => {
     const loadFavicons = async () => {
       try {
-        // Check if favicons exist by trying to fetch the favicon.ico
-        const faviconUrl = `${STORAGE_BASE_URL}/storage/favicons/favicon.ico`;
-        const response = await fetch(faviconUrl, { method: 'HEAD' });
+        // Check if favicons exist by trying to load an image
+        // This avoids CORS issues since we're loading an image, not making an API call
+        const faviconExists = await checkFaviconExists();
         
-        if (response.ok) {
+        if (faviconExists) {
           // Generated favicons exist - inject all favicon tags
           injectGeneratedFavicons();
         } else {
@@ -26,7 +29,8 @@ function Favicons() {
           await injectDefaultFavicon();
         }
       } catch (error) {
-        // Error fetching - use default
+        // Error - use default
+        console.log('Favicon check failed, using default:', error);
         await injectDefaultFavicon();
       }
       
@@ -35,6 +39,32 @@ function Favicons() {
 
     loadFavicons();
   }, []);
+
+  /**
+   * Check if favicon exists by attempting to load it as an image
+   * This avoids CORS issues compared to fetch()
+   */
+  const checkFaviconExists = () => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const timeout = setTimeout(() => {
+        resolve(false);
+      }, 2000); // 2 second timeout
+
+      img.onload = () => {
+        clearTimeout(timeout);
+        resolve(true);
+      };
+
+      img.onerror = () => {
+        clearTimeout(timeout);
+        resolve(false);
+      };
+
+      // Add cache buster to avoid cached 404s
+      img.src = `${STORAGE_BASE_URL}/storage/favicons/favicon.ico?t=${Date.now()}`;
+    });
+  };
 
   const injectGeneratedFavicons = () => {
     const baseUrl = `${STORAGE_BASE_URL}/storage/favicons`;
