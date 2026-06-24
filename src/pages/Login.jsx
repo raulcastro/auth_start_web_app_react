@@ -11,19 +11,25 @@ import {
   FormControlLabel,
   Checkbox,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
+import { useAppConfig } from '../context/AppConfigContext';
 
 function Login({ onSwitchToRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  
+  const { getTitle, getSubtitle, getLogo, loading } = useAppConfig();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Login attempt:', { email, password, rememberMe });
     // TODO: Connect to API
   };
+
+  const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
 
   return (
     <Box
@@ -62,12 +68,33 @@ function Login({ onSwitchToRegister }) {
             alignItems: 'center',
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-            <LockOutlinedIcon />
-          </Avatar>
+          {loading ? (
+            <CircularProgress sx={{ m: 1 }} />
+          ) : logoUrl ? (
+            <Avatar
+              src={logoUrl}
+              sx={{
+                m: 1,
+                width: 80,
+                height: 80,
+                bgcolor: 'transparent',
+                '& img': {
+                  objectFit: 'contain',
+                },
+              }}
+            />
+          ) : (
+            <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
+              <LockOutlinedIcon />
+            </Avatar>
+          )}
           
           <Typography component="h1" variant="h5">
-            Sign in
+            {loading ? 'Loading...' : getTitle()}
+          </Typography>
+          
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {loading ? '' : getSubtitle()}
           </Typography>
           
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>

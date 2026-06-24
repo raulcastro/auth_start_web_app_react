@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
+import { AppConfigProvider } from './context/AppConfigContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -18,32 +19,27 @@ function App() {
     setCurrentTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  // Show Login/Register if not authenticated
-  if (!isAuthenticated) {
-    return (
+  return (
+    <AppConfigProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {showRegister ? (
-          <Register onSwitchToLogin={() => setShowRegister(false)} />
+        {!isAuthenticated ? (
+          showRegister ? (
+            <Register onSwitchToLogin={() => setShowRegister(false)} />
+          ) : (
+            <Login onSwitchToRegister={() => setShowRegister(true)} />
+          )
         ) : (
-          <Login onSwitchToRegister={() => setShowRegister(true)} />
+          <Layout toggleTheme={toggleTheme} currentTheme={currentTheme}>
+            <div>
+              <h1>Welcome to AuthWebApp</h1>
+              <p>You are now logged in!</p>
+              <button onClick={() => setIsAuthenticated(false)}>Logout</button>
+            </div>
+          </Layout>
         )}
       </ThemeProvider>
-    );
-  }
-
-  // Show Dashboard if authenticated
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Layout toggleTheme={toggleTheme} currentTheme={currentTheme}>
-        <div>
-          <h1>Welcome to AuthWebApp</h1>
-          <p>You are now logged in!</p>
-          <button onClick={() => setIsAuthenticated(false)}>Logout</button>
-        </div>
-      </Layout>
-    </ThemeProvider>
+    </AppConfigProvider>
   );
 }
 
