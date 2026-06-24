@@ -74,9 +74,9 @@ function Login({ onSwitchToRegister }) {
             <Avatar
               src={logoUrl}
               sx={{
-                m: 1,
-                width: 80,
-                height: 80,
+                m: 2,
+                width: 120,
+                height: 120,
                 bgcolor: 'transparent',
                 '& img': {
                   objectFit: 'contain',
@@ -84,8 +84,8 @@ function Login({ onSwitchToRegister }) {
               }}
             />
           ) : (
-            <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-              <LockOutlinedIcon />
+            <Avatar sx={{ m: 2, width: 120, height: 120, bgcolor: 'primary.main' }}>
+              <LockOutlinedIcon sx={{ fontSize: 60 }} />
             </Avatar>
           )}
           
