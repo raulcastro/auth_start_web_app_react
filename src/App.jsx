@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AppConfigProvider, useAppConfig } from './context/AppConfigContext';
 import DocumentTitle from './components/DocumentTitle';
+import Favicons from './components/Favicons';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -15,6 +16,7 @@ function AppContent() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <Favicons />
       <DocumentTitle suffix={isAuthenticated ? 'Dashboard' : 'Login'} />
       {!isAuthenticated ? (
         showRegister ? (

@@ -1,12 +1,15 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
-const STORAGE_BASE_URL = 'http://127.0.0.1:8000';
+export const API_BASE_URL = 'http://127.0.0.1:8000/api';
+export const STORAGE_BASE_URL = 'http://127.0.0.1:8000';
+
+const API_URL = API_BASE_URL;
+const STORAGE_URL = STORAGE_BASE_URL;
 
 /**
  * Fetch public app configuration from API
  */
 export const fetchAppConfig = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/config`);
+    const response = await fetch(`${API_URL}/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch config');
     }
@@ -36,7 +39,7 @@ export const fetchAppConfig = async () => {
  */
 export const fetchWebAppConfig = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/web-config`);
+    const response = await fetch(`${API_URL}/web-config`);
     if (!response.ok) {
       throw new Error('Failed to fetch web app config');
     }
@@ -53,7 +56,7 @@ export const fetchWebAppConfig = async () => {
  */
 export const fetchLogos = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/logos`);
+    const response = await fetch(`${API_URL}/logos`);
     if (!response.ok) {
       throw new Error('Failed to fetch logos');
     }
@@ -78,7 +81,7 @@ const processLogos = (logos) => {
       // If URL is relative, prepend the storage base URL
       const fullUrl = logo.url.startsWith('http') 
         ? logo.url 
-        : `${STORAGE_BASE_URL}${logo.url}`;
+        : `${STORAGE_URL}${logo.url}`;
       
       processedLogos[type] = {
         ...logo,
