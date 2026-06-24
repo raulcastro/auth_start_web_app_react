@@ -49,10 +49,11 @@ export const AppConfigProvider = ({ children }) => {
     const canUserChange = webAppConfig?.['features.user_font_size']?.value !== false;
     
     if (canUserChange && userFontSize) {
-      return userFontSize;
+      return parseInt(userFontSize, 10);
     }
     
-    return webAppConfig?.['typography.base_font_size']?.value || 16;
+    const configFontSize = webAppConfig?.['typography.base_font_size']?.value;
+    return configFontSize ? parseInt(configFontSize, 10) : 16;
   };
 
   // Get login gradient colors
@@ -69,7 +70,7 @@ export const AppConfigProvider = ({ children }) => {
     const primaryColor = webAppConfig?.['theme.primary_color']?.value || '#1976d2';
     const secondaryColor = webAppConfig?.['theme.secondary_color']?.value || '#dc004e';
     const fontFamily = webAppConfig?.['typography.font_family']?.value || 'Roboto';
-    const isDense = webAppConfig?.['layout.dense']?.value || false;
+    const isDense = webAppConfig?.['layout.dense']?.value === true || webAppConfig?.['layout.dense']?.value === '1' || webAppConfig?.['layout.dense']?.value === 1;
 
     return createTheme({
       palette: {
@@ -87,7 +88,7 @@ export const AppConfigProvider = ({ children }) => {
       },
       typography: {
         fontFamily,
-        fontSize,
+        fontSize: typeof fontSize === 'number' ? fontSize : parseInt(fontSize, 10) || 16,
         htmlFontSize: 16,
       },
       spacing: isDense ? 4 : 8,
