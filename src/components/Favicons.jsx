@@ -78,7 +78,6 @@ function Favicons() {
       { rel: 'shortcut icon', href: `${baseUrl}/favicon.ico` },
       { rel: 'manifest', href: `${STORAGE_BASE_URL}/favicon-manifest` },
     ];
-    ];
 
     // Remove existing favicon tags
     removeExistingFavicons();
