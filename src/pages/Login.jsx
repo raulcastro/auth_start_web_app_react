@@ -21,7 +21,14 @@ function Login({ onSwitchToRegister }) {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  const { getTitle, getSubtitle, getLogo, loading } = useAppConfig();
+  const { 
+    getTitle, 
+    getSubtitle, 
+    getLogo, 
+    loading, 
+    getLoginGradient,
+    getThemeMode,
+  } = useAppConfig();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,6 +37,8 @@ function Login({ onSwitchToRegister }) {
   };
 
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
+  const gradient = getLoginGradient();
+  const isDark = getThemeMode() === 'dark';
 
   return (
     <Box
@@ -39,10 +48,9 @@ function Login({ onSwitchToRegister }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)'
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: isDark 
+          ? 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)'
+          : gradient,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -69,7 +77,7 @@ function Login({ onSwitchToRegister }) {
           }}
         >
           {loading ? (
-            <CircularProgress sx={{ m: 1 }} />
+            <CircularProgress sx={{ m: 2 }} />
           ) : logoUrl ? (
             <Avatar
               src={logoUrl}

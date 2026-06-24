@@ -26,7 +26,25 @@ export const fetchAppConfig = async () => {
       'app.subtitle': 'Authentication System',
       'app.language': 'en',
       logos: {},
+      web_app: getDefaultWebAppConfig(),
     };
+  }
+};
+
+/**
+ * Fetch Web App Config only
+ */
+export const fetchWebAppConfig = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/web-config`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch web app config');
+    }
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching web app config:', error);
+    return getDefaultWebAppConfig();
   }
 };
 
@@ -71,3 +89,19 @@ const processLogos = (logos) => {
   
   return processedLogos;
 };
+
+/**
+ * Default Web App Config
+ */
+const getDefaultWebAppConfig = () => ({
+  'theme.mode': { value: 'light', is_editable_by_user: true },
+  'theme.primary_color': { value: '#1976d2', is_editable_by_user: false },
+  'theme.secondary_color': { value: '#dc004e', is_editable_by_user: false },
+  'theme.login_gradient_start': { value: '#667eea', is_editable_by_user: false },
+  'theme.login_gradient_end': { value: '#764ba2', is_editable_by_user: false },
+  'typography.base_font_size': { value: 16, is_editable_by_user: true },
+  'typography.font_family': { value: 'Roboto', is_editable_by_user: true },
+  'layout.dense': { value: false, is_editable_by_user: true },
+  'features.user_theme_switch': { value: true, is_editable_by_user: false },
+  'features.user_font_size': { value: true, is_editable_by_user: false },
+});

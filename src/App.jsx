@@ -1,46 +1,46 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { AppConfigProvider } from './context/AppConfigContext';
+import { AppConfigProvider, useAppConfig } from './context/AppConfigContext';
 import DocumentTitle from './components/DocumentTitle';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import { lightTheme, darkTheme } from './theme/theme';
 
-function App() {
-  const [currentTheme, setCurrentTheme] = useState('light');
+// Inner component that uses the theme from context
+function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-
-  const theme = useMemo(() => {
-    return currentTheme === 'dark' ? darkTheme : lightTheme;
-  }, [currentTheme]);
-
-  const toggleTheme = () => {
-    setCurrentTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+  const { theme } = useAppConfig();
 
   return (
-    <AppConfigProvider>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <DocumentTitle suffix={isAuthenticated ? 'Dashboard' : 'Login'} />
-        {!isAuthenticated ? (
-          showRegister ? (
-            <Register onSwitchToLogin={() => setShowRegister(false)} />
-          ) : (
-            <Login onSwitchToRegister={() => setShowRegister(true)} />
-          )
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <DocumentTitle suffix={isAuthenticated ? 'Dashboard' : 'Login'} />
+      {!isAuthenticated ? (
+        showRegister ? (
+          <Register onSwitchToLogin={() => setShowRegister(false)} />
         ) : (
-          <Layout toggleTheme={toggleTheme} currentTheme={currentTheme}>
-            <div>
-              <h1>Welcome to AuthWebApp</h1>
-              <p>You are now logged in!</p>
-              <button onClick={() => setIsAuthenticated(false)}>Logout</button>
-            </div>
-          </Layout>
-        )}
-      </ThemeProvider>
+          <Login onSwitchToRegister={() => setShowRegister(true)} />
+        )
+      ) : (
+        <Layout 
+          onLogout={() => setIsAuthenticated(false)} 
+        >
+          <div>
+            <h1>Welcome to AuthWebApp</h1>
+            <p>You are now logged in!</p>
+          </div>
+        </Layout>
+      )}
+    </ThemeProvider>
+  );
+}
+
+// Main App component
+function App() {
+  return (
+    <AppConfigProvider>
+      <AppContent />
     </AppConfigProvider>
   );
 }
