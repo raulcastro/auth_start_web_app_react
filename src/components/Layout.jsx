@@ -12,6 +12,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Avatar,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -21,15 +22,34 @@ import {
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
 } from '@mui/icons-material';
+import { useAppConfig } from '../context/AppConfigContext';
 
 const drawerWidth = 240;
 
-function Layout({ children, toggleTheme, currentTheme }) {
+function Layout({ children, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { 
+    getTitle, 
+    getLogo, 
+    getThemeMode, 
+    setUserTheme, 
+    canUserChangeTheme,
+    loading 
+  } = useAppConfig();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  const handleThemeToggle = () => {
+    const currentMode = getThemeMode();
+    const newMode = currentMode === 'dark' ? 'light' : 'dark';
+    setUserTheme(newMode);
+  };
+
+  const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
+  const currentMode = getThemeMode();
+  const canToggle = canUserChangeTheme();
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon /> },
@@ -39,10 +59,31 @@ function Layout({ children, toggleTheme, currentTheme }) {
 
   const drawer = (
     <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          AuthWebApp
-        </Typography>
+      <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2 }}>
+        {loading ? (
+          <Typography variant="h6" noWrap component="div">
+            Loading...
+          </Typography>
+        ) : logoUrl ? (
+          <Avatar
+            src={logoUrl}
+            sx={{
+              width: 150,
+              height: 60,
+              bgcolor: 'transparent',
+              '& img': {
+                objectFit: 'contain',
+                width: '100%',
+                height: '100%',
+              },
+            }}
+            variant="square"
+          />
+        ) : (
+          <Typography variant="h6" noWrap component="div">
+            {getTitle()}
+          </Typography>
+        )}
       </Toolbar>
       <Divider />
       <List>
@@ -80,9 +121,11 @@ function Layout({ children, toggleTheme, currentTheme }) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Dashboard
           </Typography>
-          <IconButton color="inherit" onClick={toggleTheme}>
-            {currentTheme === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
+          {canToggle && (
+            <IconButton color="inherit" onClick={handleThemeToggle}>
+              {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+          )}
         </Toolbar>
       </AppBar>
       <Box
