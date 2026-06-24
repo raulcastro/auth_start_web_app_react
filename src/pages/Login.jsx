@@ -10,7 +10,7 @@ import {
   CssBaseline,
   FormControlLabel,
   Checkbox,
-  Grid,
+  Stack,
   CircularProgress,
 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
@@ -26,7 +26,7 @@ function Login({ onSwitchToRegister }) {
     getSubtitle, 
     getLogo, 
     loading, 
-    getLoginGradient,
+    webAppConfig,
     getThemeMode,
   } = useAppConfig();
 
@@ -37,7 +37,14 @@ function Login({ onSwitchToRegister }) {
   };
 
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
-  const gradient = getLoginGradient();
+  
+  // Build gradient with 3 colors
+  const start = webAppConfig?.['theme.login_gradient_start']?.value || '#4f46e5';
+  const middle = webAppConfig?.['theme.login_gradient_middle']?.value || '#7c3aed';
+  const end = webAppConfig?.['theme.login_gradient_end']?.value || '#c026d3';
+  const angle = webAppConfig?.['theme.login_gradient_angle']?.value || '135';
+  const gradient = `linear-gradient(${angle}deg, ${start} 0%, ${middle} 50%, ${end} 100%)`;
+  
   const isDark = getThemeMode() === 'dark';
 
   return (
@@ -97,7 +104,7 @@ function Login({ onSwitchToRegister }) {
             </Avatar>
           )}
           
-          <Typography component="h1" variant="h5">
+          <Typography component="h1" variant="h5" fontWeight={500}>
             {loading ? 'Loading...' : getTitle()}
           </Typography>
           
@@ -148,30 +155,47 @@ function Login({ onSwitchToRegister }) {
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              size="large"
+              sx={{ mt: 3, mb: 2, py: 1.2 }}
             >
               Sign In
             </Button>
             
-            <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                <Link
-                  href="#"
-                  variant="body2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onSwitchToRegister();
-                  }}
-                >
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-            </Grid>
+            <Stack 
+              direction="row" 
+              spacing={2} 
+              justifyContent="space-between"
+              alignItems="center"
+              sx={{ mt: 2 }}
+            >
+              <Link 
+                href="#" 
+                variant="body2"
+                underline="hover"
+                sx={{ 
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Forgot password?
+              </Link>
+              
+              <Link
+                href="#"
+                variant="body2"
+                underline="hover"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSwitchToRegister();
+                }}
+                sx={{ 
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Sign Up
+              </Link>
+            </Stack>
           </Box>
         </Box>
       </Paper>

@@ -72,6 +72,9 @@ export const AppConfigProvider = ({ children }) => {
     const fontFamily = webAppConfig?.['typography.font_family']?.value || 'Roboto';
     const isDense = webAppConfig?.['layout.dense']?.value === true || webAppConfig?.['layout.dense']?.value === '1' || webAppConfig?.['layout.dense']?.value === 1;
 
+    // Ensure fontSize is a valid number
+    const validFontSize = typeof fontSize === 'number' && !isNaN(fontSize) ? fontSize : 16;
+
     return createTheme({
       palette: {
         mode,
@@ -87,9 +90,8 @@ export const AppConfigProvider = ({ children }) => {
         },
       },
       typography: {
-        fontFamily,
-        fontSize: typeof fontSize === 'number' ? fontSize : parseInt(fontSize, 10) || 16,
-        htmlFontSize: 16,
+        fontFamily: `"${fontFamily}", "Roboto", "Helvetica", "Arial", sans-serif`,
+        fontSize: validFontSize,
       },
       spacing: isDense ? 4 : 8,
     });

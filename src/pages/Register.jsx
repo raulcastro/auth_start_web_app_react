@@ -11,6 +11,7 @@ import {
   Grid,
 } from '@mui/material';
 import { PersonAdd as PersonAddIcon } from '@mui/icons-material';
+import { useAppConfig } from '../context/AppConfigContext';
 
 function Register({ onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -20,6 +21,8 @@ function Register({ onSwitchToLogin }) {
     password: '',
     confirmPassword: '',
   });
+
+  const { getThemeMode, webAppConfig } = useAppConfig();
 
   const handleChange = (e) => {
     setFormData({
@@ -38,6 +41,15 @@ function Register({ onSwitchToLogin }) {
     // TODO: Connect to API
   };
 
+  // Build gradient with 3 colors
+  const start = webAppConfig?.['theme.login_gradient_start']?.value || '#4f46e5';
+  const middle = webAppConfig?.['theme.login_gradient_middle']?.value || '#7c3aed';
+  const end = webAppConfig?.['theme.login_gradient_end']?.value || '#c026d3';
+  const angle = webAppConfig?.['theme.login_gradient_angle']?.value || '135';
+  const gradient = `linear-gradient(${angle}deg, ${start} 0%, ${middle} 50%, ${end} 100%)`;
+  
+  const isDark = getThemeMode() === 'dark';
+
   return (
     <Box
       sx={{
@@ -46,10 +58,9 @@ function Register({ onSwitchToLogin }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: (theme) =>
-          theme.palette.mode === 'dark'
-            ? 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)'
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        background: isDark
+          ? 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)'
+          : gradient,
         position: 'fixed',
         top: 0,
         left: 0,
@@ -85,7 +96,7 @@ function Register({ onSwitchToLogin }) {
           
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   autoComplete="given-name"
                   name="firstName"
@@ -98,7 +109,7 @@ function Register({ onSwitchToLogin }) {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   required
                   fullWidth
@@ -110,7 +121,7 @@ function Register({ onSwitchToLogin }) {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   fullWidth
@@ -122,7 +133,7 @@ function Register({ onSwitchToLogin }) {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   fullWidth
@@ -135,7 +146,7 @@ function Register({ onSwitchToLogin }) {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid size={{ xs: 12 }}>
                 <TextField
                   required
                   fullWidth
@@ -159,7 +170,7 @@ function Register({ onSwitchToLogin }) {
             </Button>
             
             <Grid container justifyContent="flex-end">
-              <Grid item>
+              <Grid>
                 <Link
                   href="#"
                   variant="body2"
