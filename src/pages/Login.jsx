@@ -28,6 +28,7 @@ function Login({ onSwitchToRegister }) {
     loading, 
     webAppConfig,
     getThemeMode,
+    isSignupEnabled,
   } = useAppConfig();
 
   const handleSubmit = (e) => {
@@ -164,7 +165,7 @@ function Login({ onSwitchToRegister }) {
             <Stack 
               direction="row" 
               spacing={2} 
-              justifyContent="space-between"
+              justifyContent={isSignupEnabled() ? "space-between" : "center"}
               alignItems="center"
               sx={{ mt: 2 }}
             >
@@ -180,21 +181,23 @@ function Login({ onSwitchToRegister }) {
                 Forgot password?
               </Link>
               
-              <Link
-                href="#"
-                variant="body2"
-                underline="hover"
-                onClick={(e) => {
-                  e.preventDefault();
-                  onSwitchToRegister();
-                }}
-                sx={{ 
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Sign Up
-              </Link>
+              {isSignupEnabled() && (
+                <Link
+                  href="#"
+                  variant="body2"
+                  underline="hover"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSwitchToRegister();
+                  }}
+                  sx={{ 
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Sign Up
+                </Link>
+              )}
             </Stack>
           </Box>
         </Box>

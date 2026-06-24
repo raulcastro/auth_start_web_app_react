@@ -134,9 +134,8 @@ export const AppConfigProvider = ({ children }) => {
     userFontSize,
     setUserTheme,
     setUserFontSizePreference,
-    // Check if user can customize
-    canUserChangeTheme: () => webAppConfig?.['features.user_theme_switch']?.value !== false,
-    canUserChangeFontSize: () => webAppConfig?.['features.user_font_size']?.value !== false,
+    // Check if signup is enabled
+    isSignupEnabled: () => config?.['app.signup_enabled'] === true || config?.['app.signup_enabled'] === '1' || config?.['app.signup_enabled'] === 1,
   };
 
   return (

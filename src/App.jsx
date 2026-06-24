@@ -11,7 +11,14 @@ import Register from './pages/Register';
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const { theme } = useAppConfig();
+  const { theme, isSignupEnabled } = useAppConfig();
+
+  // Prevent showing register if signup is disabled
+  const handleSwitchToRegister = () => {
+    if (isSignupEnabled()) {
+      setShowRegister(true);
+    }
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -19,10 +26,10 @@ function AppContent() {
       <Favicons />
       <DocumentTitle suffix={isAuthenticated ? 'Dashboard' : 'Login'} />
       {!isAuthenticated ? (
-        showRegister ? (
+        showRegister && isSignupEnabled() ? (
           <Register onSwitchToLogin={() => setShowRegister(false)} />
         ) : (
-          <Login onSwitchToRegister={() => setShowRegister(true)} />
+          <Login onSwitchToRegister={handleSwitchToRegister} />
         )
       ) : (
         <Layout 
