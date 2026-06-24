@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AppConfigProvider } from './context/AppConfigContext';
+import DocumentTitle from './components/DocumentTitle';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -23,6 +24,7 @@ function App() {
     <AppConfigProvider>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <DocumentTitle suffix={isAuthenticated ? 'Dashboard' : 'Login'} />
         {!isAuthenticated ? (
           showRegister ? (
             <Register onSwitchToLogin={() => setShowRegister(false)} />
