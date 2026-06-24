@@ -42,6 +42,7 @@ function Register({ onSwitchToLogin }) {
     <Box
       sx={{
         minHeight: '100vh',
+        width: '100vw',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -49,6 +50,12 @@ function Register({ onSwitchToLogin }) {
           theme.palette.mode === 'dark'
             ? 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)'
             : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto',
       }}
     >
       <CssBaseline />
