@@ -6,6 +6,7 @@ import Favicons from './components/Favicons';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 
 // Inner component that uses the theme from context
 function AppContent() {
@@ -54,10 +55,7 @@ function AppContent() {
         <Layout 
           onLogout={handleLogout}
         >
-          <div>
-            <h1>Welcome to AuthWebApp</h1>
-            <p>You are now logged in!</p>
-          </div>
+          <Dashboard />
         </Layout>
       )}
     </ThemeProvider>
