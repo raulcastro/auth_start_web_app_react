@@ -9,9 +9,8 @@ import Register from './pages/Register';
 
 // Inner component that uses the theme from context
 function AppContent() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const { theme, isSignupEnabled } = useAppConfig();
+  const { theme, isSignupEnabled, isLoggedIn, logout, updateAuthState } = useAppConfig();
 
   // Prevent showing register if signup is disabled
   const handleSwitchToRegister = () => {
@@ -20,20 +19,40 @@ function AppContent() {
     }
   };
 
+  const handleLoginSuccess = (data) => {
+    updateAuthState(data.user, data.token);
+    setShowRegister(false);
+  };
+
+  const handleRegisterSuccess = (data) => {
+    updateAuthState(data.user, data.token);
+    setShowRegister(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Favicons />
-      <DocumentTitle suffix={isAuthenticated ? 'Dashboard' : 'Login'} />
-      {!isAuthenticated ? (
+      <DocumentTitle suffix={isLoggedIn ? 'Dashboard' : 'Login'} />
+      {!isLoggedIn ? (
         showRegister && isSignupEnabled() ? (
-          <Register onSwitchToLogin={() => setShowRegister(false)} />
+          <Register 
+            onSwitchToLogin={() => setShowRegister(false)} 
+            onRegisterSuccess={handleRegisterSuccess}
+          />
         ) : (
-          <Login onSwitchToRegister={handleSwitchToRegister} />
+          <Login 
+            onSwitchToRegister={handleSwitchToRegister} 
+            onLoginSuccess={handleLoginSuccess}
+          />
         )
       ) : (
         <Layout 
-          onLogout={() => setIsAuthenticated(false)} 
+          onLogout={handleLogout}
         >
           <div>
             <h1>Welcome to AuthWebApp</h1>

@@ -13,6 +13,9 @@ import {
   ListItemIcon,
   ListItemText,
   Avatar,
+  Button,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -21,6 +24,7 @@ import {
   Settings as SettingsIcon,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useAppConfig } from '../context/AppConfigContext';
 
@@ -28,12 +32,14 @@ const drawerWidth = 240;
 
 function Layout({ children, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
   const { 
     getTitle, 
     getLogo, 
     getThemeMode, 
     setUserTheme, 
-    canUserChangeTheme,
+    user,
+    webAppConfig,
     loading 
   } = useAppConfig();
 
@@ -47,9 +53,24 @@ function Layout({ children, onLogout }) {
     setUserTheme(newMode);
   };
 
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    if (onLogout) {
+      onLogout();
+    }
+  };
+
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
   const currentMode = getThemeMode();
-  const canToggle = canUserChangeTheme();
+  const canToggle = webAppConfig?.['features.user_theme_switch']?.value !== false;
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon /> },
@@ -122,9 +143,44 @@ function Layout({ children, onLogout }) {
             Dashboard
           </Typography>
           {canToggle && (
-            <IconButton color="inherit" onClick={handleThemeToggle}>
+            <IconButton color="inherit" onClick={handleThemeToggle} sx={{ mr: 1 }}>
               {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
+          )}
+          
+          {/* User Menu */}
+          {user && (
+            <>
+              <Button
+                color="inherit"
+                onClick={handleMenuOpen}
+                startIcon={
+                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </Avatar>
+                }
+              >
+                {user.name || user.email}
+              </Button>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                <MenuItem onClick={handleLogout}>
+                  <LogoutIcon sx={{ mr: 1 }} />
+                  Logout
+                </MenuItem>
+              </Menu>
+            </>
           )}
         </Toolbar>
       </AppBar>

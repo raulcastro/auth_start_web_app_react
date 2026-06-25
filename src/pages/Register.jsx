@@ -9,11 +9,14 @@ import {
   Avatar,
   CssBaseline,
   Grid,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import { useAppConfig } from '../context/AppConfigContext';
+import { registerUser } from '../services/api';
 
-function Register({ onSwitchToLogin }) {
+function Register({ onSwitchToLogin, onRegisterSuccess }) {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -21,8 +24,11 @@ function Register({ onSwitchToLogin }) {
     password: '',
     confirmPassword: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const { getThemeMode, webAppConfig } = useAppConfig();
+  const { getThemeMode, webAppConfig, updateAuthState } = useAppConfig();
 
   const handleChange = (e) => {
     setFormData({
@@ -31,14 +37,44 @@ function Register({ onSwitchToLogin }) {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match!');
+      setError('Passwords do not match!');
       return;
     }
-    console.log('Register attempt:', formData);
-    // TODO: Connect to API
+
+    setLoading(true);
+
+    try {
+      const userData = {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.confirmPassword,
+      };
+
+      const response = await registerUser(userData);
+
+      if (response.success && response.data) {
+        setSuccess('Registration successful! Redirecting...');
+        updateAuthState(response.data.user, response.data.token);
+        setTimeout(() => {
+          if (onRegisterSuccess) {
+            onRegisterSuccess(response.data);
+          }
+        }, 1500);
+      } else {
+        setError(response.message || 'Registration failed');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred during registration');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Build gradient with 3 colors
@@ -47,7 +83,7 @@ function Register({ onSwitchToLogin }) {
   const end = webAppConfig?.['theme.login_gradient_end']?.value || '#c026d3';
   const angle = webAppConfig?.['theme.login_gradient_angle']?.value || '135';
   const gradient = `linear-gradient(${angle}deg, ${start} 0%, ${middle} 50%, ${end} 100%)`;
-  
+
   const isDark = getThemeMode() === 'dark';
 
   return (
@@ -89,11 +125,23 @@ function Register({ onSwitchToLogin }) {
           <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
             <PersonAddIcon />
           </Avatar>
-          
+
           <Typography component="h1" variant="h5">
             Sign up
           </Typography>
-          
+
+          {error && (
+            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+              {error}
+            </Alert>
+          )}
+
+          {success && (
+            <Alert severity="success" sx={{ mt: 2, width: '100%' }}>
+              {success}
+            </Alert>
+          )}
+
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3, width: '100%' }}>
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -107,6 +155,7 @@ function Register({ onSwitchToLogin }) {
                   autoFocus
                   value={formData.firstName}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -119,6 +168,7 @@ function Register({ onSwitchToLogin }) {
                   autoComplete="family-name"
                   value={formData.lastName}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -131,6 +181,7 @@ function Register({ onSwitchToLogin }) {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -144,6 +195,7 @@ function Register({ onSwitchToLogin }) {
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -156,19 +208,21 @@ function Register({ onSwitchToLogin }) {
                   id="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </Grid>
             </Grid>
-            
+
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={loading}
             >
-              Sign Up
+              {loading ? <CircularProgress size={24} /> : 'Sign Up'}
             </Button>
-            
+
             <Grid container justifyContent="flex-end">
               <Grid>
                 <Link

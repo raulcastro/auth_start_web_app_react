@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { fetchAppConfig, fetchWebAppConfig } from '../services/api';
+import { fetchAppConfig, fetchWebAppConfig, getCurrentUser, isAuthenticated } from '../services/api';
 import { createTheme } from '@mui/material/styles';
 
 const AppConfigContext = createContext();
@@ -8,6 +8,10 @@ export const AppConfigProvider = ({ children }) => {
   const [config, setConfig] = useState(null);
   const [webAppConfig, setWebAppConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Auth state
+  const [user, setUser] = useState(() => getCurrentUser());
+  const [isLoggedIn, setIsLoggedIn] = useState(() => isAuthenticated());
   
   // User preferences (stored in localStorage)
   const [userThemeMode, setUserThemeMode] = useState(() => {
@@ -31,6 +35,25 @@ export const AppConfigProvider = ({ children }) => {
     };
     loadConfig();
   }, []);
+
+  // Update auth state helper
+  const updateAuthState = (userData, token) => {
+    if (userData && token) {
+      setUser(userData);
+      setIsLoggedIn(true);
+    } else {
+      setUser(null);
+      setIsLoggedIn(false);
+    }
+  };
+
+  // Logout helper
+  const logout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setIsLoggedIn(false);
+  };
 
   // Get effective theme mode (user preference > admin config > default)
   const getThemeMode = () => {
@@ -120,6 +143,11 @@ export const AppConfigProvider = ({ children }) => {
     webAppConfig,
     theme,
     loading,
+    // Auth state
+    user,
+    isLoggedIn,
+    updateAuthState,
+    logout,
     // Helper getters
     getTitle: () => config?.['app.title'] || 'AuthWebApp',
     getSubtitle: () => config?.['app.subtitle'] || 'Authentication System',

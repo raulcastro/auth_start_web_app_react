@@ -94,6 +94,112 @@ const processLogos = (logos) => {
 };
 
 /**
+ * Register a new user
+ */
+export const registerUser = async (userData) => {
+  try {
+    const response = await fetch(`${API_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Registration failed');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Login user
+ */
+export const loginUser = async (credentials) => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
+
+    // Store token
+    if (data.data && data.data.token) {
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Logout user
+ */
+export const logoutUser = async () => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    
+    if (token) {
+      await fetch(`${API_URL}/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+  }
+};
+
+/**
+ * Get current user
+ */
+export const getCurrentUser = () => {
+  const user = localStorage.getItem('user');
+  return user ? JSON.parse(user) : null;
+};
+
+/**
+ * Get auth token
+ */
+export const getAuthToken = () => {
+  return localStorage.getItem('auth_token');
+};
+
+/**
+ * Check if user is authenticated
+ */
+export const isAuthenticated = () => {
+  return !!localStorage.getItem('auth_token');
+};
+
+/**
  * Default Web App Config
  */
 const getDefaultWebAppConfig = () => ({

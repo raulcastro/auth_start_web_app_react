@@ -12,29 +12,51 @@ import {
   Checkbox,
   Stack,
   CircularProgress,
+  Alert,
 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useAppConfig } from '../context/AppConfigContext';
+import { loginUser } from '../services/api';
 
-function Login({ onSwitchToRegister }) {
+function Login({ onSwitchToRegister, onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const { 
     getTitle, 
     getSubtitle, 
     getLogo, 
-    loading, 
+    configLoading, 
     webAppConfig,
     getThemeMode,
     isSignupEnabled,
+    updateAuthState,
   } = useAppConfig();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password, rememberMe });
-    // TODO: Connect to API
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await loginUser({ email, password });
+      
+      if (response.success && response.data) {
+        updateAuthState(response.data.user, response.data.token);
+        if (onLoginSuccess) {
+          onLoginSuccess(response.data);
+        }
+      } else {
+        setError(response.message || 'Login failed');
+      }
+    } catch (err) {
+      setError(err.message || 'An error occurred during login');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
@@ -84,7 +106,7 @@ function Login({ onSwitchToRegister }) {
             alignItems: 'center',
           }}
         >
-          {loading ? (
+          {configLoading ? (
             <CircularProgress sx={{ m: 2 }} />
           ) : logoUrl ? (
             <Avatar
@@ -106,12 +128,18 @@ function Login({ onSwitchToRegister }) {
           )}
           
           <Typography component="h1" variant="h5" fontWeight={500}>
-            {loading ? 'Loading...' : getTitle()}
+            {configLoading ? 'Loading...' : getTitle()}
           </Typography>
           
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {loading ? '' : getSubtitle()}
+            {configLoading ? '' : getSubtitle()}
           </Typography>
+          
+          {error && (
+            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+              {error}
+            </Alert>
+          )}
           
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
             <TextField
@@ -125,6 +153,7 @@ function Login({ onSwitchToRegister }) {
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
             />
             
             <TextField
@@ -138,6 +167,7 @@ function Login({ onSwitchToRegister }) {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
             />
             
             <FormControlLabel
@@ -147,6 +177,7 @@ function Login({ onSwitchToRegister }) {
                   color="primary"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading}
                 />
               }
               label="Remember me"
@@ -158,8 +189,9 @@ function Login({ onSwitchToRegister }) {
               variant="contained"
               size="large"
               sx={{ mt: 3, mb: 2, py: 1.2 }}
+              disabled={loading}
             >
-              Sign In
+              {loading ? <CircularProgress size={24} /> : 'Sign In'}
             </Button>
             
             <Stack 
