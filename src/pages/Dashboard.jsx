@@ -110,248 +110,251 @@ function Dashboard() {
   ];
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      {/* Welcome Section */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          mb: 3,
-          background: isDark
-            ? 'linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%)'
-            : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          borderRadius: 2,
-        }}
-      >
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Welcome back, {user?.name || 'User'}! 👋
-        </Typography>
-        <Typography variant="body1">
-          Here's what's happening with your application today.
-        </Typography>
-      </Paper>
+    <Box sx={{ width: '100%' }}>
+      {/* Main content wrapper with padding */}
+      <Box sx={{ mx: 3, pb: 5, pt: 3 }}>
+        {/* Welcome Section */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
+            background: isDark
+              ? 'linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%)'
+              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="h4" fontWeight="bold" gutterBottom>
+            Welcome back, {user?.name || 'User'}!
+          </Typography>
+          <Typography variant="body1">
+            Here's what's happening with your application today.
+          </Typography>
+        </Paper>
 
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Total Users"
-            value="1,234"
-            icon={<PeopleIcon />}
-            color="#1976d2"
-            subtitle="+12% from last month"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Active Today"
-            value="89"
-            icon={<TrendingUpIcon />}
-            color="#2e7d32"
-            subtitle="+5% from yesterday"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="New Signups"
-            value="24"
-            icon={<PersonAddIcon />}
-            color="#ed6c02"
-            subtitle="This week"
-          />
-        </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <StatCard
-            title="Total Logins"
-            value="8,542"
-            icon={<LoginIcon />}
-            color="#9c27b0"
-            subtitle="All time"
-          />
-        </Grid>
-      </Grid>
-
-      {/* Charts Row */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {/* Bar Chart */}
-        <Grid size={{ xs: 12, md: 8 }}>
-          <Card sx={{ height: 400 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                User Growth & Logins
-              </Typography>
-              <Box sx={{ height: 320 }}>
-                <BarChart
-                  xAxis={[{ 
-                    scaleType: 'band', 
-                    data: monthlyData.map(d => d.month),
-                    label: 'Month',
-                  }]}
-                  series={[
-                    {
-                      data: monthlyData.map(d => d.users),
-                      label: 'New Users',
-                      color: '#1976d2',
-                    },
-                    {
-                      data: monthlyData.map(d => d.logins),
-                      label: 'Logins',
-                      color: '#dc004e',
-                    },
-                  ]}
-                  height={300}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Pie Chart */}
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card sx={{ height: 400 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                User Distribution
-              </Typography>
-              <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
-                <PieChart
-                  series={[
-                    {
-                      data: userTypeData,
-                      highlightScope: { faded: 'global', highlighted: 'item' },
-                      faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
-                    },
-                  ]}
-                  height={300}
-                  width={300}
-                  slotProps={{
-                    legend: { hidden: false },
-                  }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Bottom Row */}
-      <Grid container spacing={3}>
-        {/* Activity Chart */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Activity Timeline (Today)
-              </Typography>
-              <Box sx={{ height: 250 }}>
-                <LineChart
-                  xAxis={[{ 
-                    data: activityData.map(d => d.time),
-                    scaleType: 'point',
-                    label: 'Time',
-                  }]}
-                  series={[
-                    {
-                      data: activityData.map(d => d.activity),
-                      label: 'Active Users',
-                      color: '#2e7d32',
-                      area: true,
-                    },
-                  ]}
-                  height={220}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Recent Activity */}
-        <Grid size={{ xs: 12, md: 6 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Recent Activity
-              </Typography>
-              <List>
-                <ActivityItem
-                  icon={<PersonAddIcon />}
-                  primary="New user registered"
-                  secondary="john@example.com"
-                  time="2 minutes ago"
-                  color="#1976d2"
-                />
-                <Divider variant="inset" component="li" />
-                <ActivityItem
-                  icon={<LoginIcon />}
-                  primary="User logged in"
-                  secondary="sarah@example.com"
-                  time="15 minutes ago"
-                  color="#2e7d32"
-                />
-                <Divider variant="inset" component="li" />
-                <ActivityItem
-                  icon={<CheckCircleIcon />}
-                  primary="Profile updated"
-                  secondary="mike@example.com"
-                  time="1 hour ago"
-                  color="#ed6c02"
-                />
-                <Divider variant="inset" component="li" />
-                <ActivityItem
-                  icon={<PeopleIcon />}
-                  primary="New admin created"
-                  secondary="admin@authstart.com"
-                  time="3 hours ago"
-                  color="#9c27b0"
-                />
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* System Status */}
-      <Paper sx={{ mt: 3, p: 3 }} elevation={1}>
-        <Typography variant="h6" gutterBottom fontWeight="bold">
-          System Status
-        </Typography>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Box>
-              <Typography variant="body2" color="textSecondary">
-                API Response Time
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="success.main">
-                45ms
-              </Typography>
-              <LinearProgress variant="determinate" value={85} color="success" sx={{ mt: 1 }} />
-            </Box>
+        {/* Stats Cards */}
+        <Grid container spacing={2} columns={12} sx={{ mb: 3 }}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title="Total Users"
+              value="1,234"
+              icon={<PeopleIcon />}
+              color="#1976d2"
+              subtitle="+12% from last month"
+            />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Box>
-              <Typography variant="body2" color="textSecondary">
-                Database Connections
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="info.main">
-                12/50
-              </Typography>
-              <LinearProgress variant="determinate" value={24} color="info" sx={{ mt: 1 }} />
-            </Box>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title="Active Today"
+              value="89"
+              icon={<TrendingUpIcon />}
+              color="#2e7d32"
+              subtitle="+5% from yesterday"
+            />
           </Grid>
-          <Grid size={{ xs: 12, sm: 4 }}>
-            <Box>
-              <Typography variant="body2" color="textSecondary">
-                Storage Usage
-              </Typography>
-              <Typography variant="h6" fontWeight="bold" color="warning.main">
-                2.4 GB / 10 GB
-              </Typography>
-              <LinearProgress variant="determinate" value={24} color="warning" sx={{ mt: 1 }} />
-            </Box>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title="New Signups"
+              value="24"
+              icon={<PersonAddIcon />}
+              color="#ed6c02"
+              subtitle="This week"
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title="Total Logins"
+              value="8,542"
+              icon={<LoginIcon />}
+              color="#9c27b0"
+              subtitle="All time"
+            />
           </Grid>
         </Grid>
-      </Paper>
+
+        {/* Charts Row */}
+        <Grid container spacing={2} columns={12} sx={{ mb: 3 }}>
+          {/* Bar Chart */}
+          <Grid size={{ xs: 12, md: 8 }}>
+            <Card sx={{ height: 400 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight="bold">
+                  User Growth & Logins
+                </Typography>
+                <Box sx={{ height: 320 }}>
+                  <BarChart
+                    xAxis={[{ 
+                      scaleType: 'band', 
+                      data: monthlyData.map(d => d.month),
+                      label: 'Month',
+                    }]}
+                    series={[
+                      {
+                        data: monthlyData.map(d => d.users),
+                        label: 'New Users',
+                        color: '#1976d2',
+                      },
+                      {
+                        data: monthlyData.map(d => d.logins),
+                        label: 'Logins',
+                        color: '#dc004e',
+                      },
+                    ]}
+                    height={300}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Pie Chart */}
+          <Grid size={{ xs: 12, md: 4 }}>
+            <Card sx={{ height: 400 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight="bold">
+                  User Distribution
+                </Typography>
+                <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
+                  <PieChart
+                    series={[
+                      {
+                        data: userTypeData,
+                        highlightScope: { faded: 'global', highlighted: 'item' },
+                        faded: { innerRadius: 30, additionalRadius: -30, color: 'gray' },
+                      },
+                    ]}
+                    height={300}
+                    width={300}
+                    slotProps={{
+                      legend: { hidden: false },
+                    }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Bottom Row */}
+        <Grid container spacing={2} columns={12}>
+          {/* Activity Chart */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight="bold">
+                  Activity Timeline (Today)
+                </Typography>
+                <Box sx={{ height: 250 }}>
+                  <LineChart
+                    xAxis={[{ 
+                      data: activityData.map(d => d.time),
+                      scaleType: 'point',
+                      label: 'Time',
+                    }]}
+                    series={[
+                      {
+                        data: activityData.map(d => d.activity),
+                        label: 'Active Users',
+                        color: '#2e7d32',
+                        area: true,
+                      },
+                    ]}
+                    height={220}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Recent Activity */}
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom fontWeight="bold">
+                  Recent Activity
+                </Typography>
+                <List>
+                  <ActivityItem
+                    icon={<PersonAddIcon />}
+                    primary="New user registered"
+                    secondary="john@example.com"
+                    time="2 minutes ago"
+                    color="#1976d2"
+                  />
+                  <Divider variant="inset" component="li" />
+                  <ActivityItem
+                    icon={<LoginIcon />}
+                    primary="User logged in"
+                    secondary="sarah@example.com"
+                    time="15 minutes ago"
+                    color="#2e7d32"
+                  />
+                  <Divider variant="inset" component="li" />
+                  <ActivityItem
+                    icon={<CheckCircleIcon />}
+                    primary="Profile updated"
+                    secondary="mike@example.com"
+                    time="1 hour ago"
+                    color="#ed6c02"
+                  />
+                  <Divider variant="inset" component="li" />
+                  <ActivityItem
+                    icon={<PeopleIcon />}
+                    primary="New admin created"
+                    secondary="admin@authstart.com"
+                    time="3 hours ago"
+                    color="#9c27b0"
+                  />
+                </List>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* System Status */}
+        <Paper sx={{ mt: 3, p: 3 }} elevation={1}>
+          <Typography variant="h6" gutterBottom fontWeight="bold">
+            System Status
+          </Typography>
+          <Grid container spacing={3} columns={12}>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Box>
+                <Typography variant="body2" color="textSecondary">
+                  API Response Time
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" color="success.main">
+                  45ms
+                </Typography>
+                <LinearProgress variant="determinate" value={85} color="success" sx={{ mt: 1 }} />
+              </Box>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Box>
+                <Typography variant="body2" color="textSecondary">
+                  Database Connections
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" color="info.main">
+                  12/50
+                </Typography>
+                <LinearProgress variant="determinate" value={24} color="info" sx={{ mt: 1 }} />
+              </Box>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4 }}>
+              <Box>
+                <Typography variant="body2" color="textSecondary">
+                  Storage Usage
+                </Typography>
+                <Typography variant="h6" fontWeight="bold" color="warning.main">
+                  2.4 GB / 10 GB
+                </Typography>
+                <LinearProgress variant="determinate" value={24} color="warning" sx={{ mt: 1 }} />
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
+      </Box>
     </Box>
   );
 }

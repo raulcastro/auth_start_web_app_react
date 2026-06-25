@@ -16,6 +16,7 @@ import {
   Button,
   Menu,
   MenuItem,
+  useTheme,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -30,9 +31,10 @@ import { useAppConfig } from '../context/AppConfigContext';
 
 const drawerWidth = 240;
 
-function Layout({ children, onLogout }) {
+function Layout({ children, onLogout, onNavigate, currentPage }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const theme = useTheme();
   const { 
     getTitle, 
     getLogo, 
@@ -68,14 +70,24 @@ function Layout({ children, onLogout }) {
     }
   };
 
-  const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
+  // Use actual MUI theme mode (resolved from 'auto' if needed)
+  const isDarkMode = theme.palette.mode === 'dark';
+  
+  // Get appropriate logo based on actual theme
+  const getThemeLogo = () => {
+    if (isDarkMode) {
+      return getLogo('dark') || getLogo('universal');
+    }
+    return getLogo('light') || getLogo('universal');
+  };
+  
+  const logoUrl = getThemeLogo();
   const currentMode = getThemeMode();
   const canToggle = webAppConfig?.['features.user_theme_switch']?.value !== false;
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon /> },
-    { text: 'Users', icon: <PeopleIcon /> },
-    { text: 'Settings', icon: <SettingsIcon /> },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: 'dashboard' },
+    { text: 'Settings', icon: <SettingsIcon />, path: 'settings' },
   ];
 
   const drawer = (
@@ -89,8 +101,8 @@ function Layout({ children, onLogout }) {
           <Avatar
             src={logoUrl}
             sx={{
-              width: 150,
-              height: 60,
+              width: 220,
+              height: 90,
               bgcolor: 'transparent',
               '& img': {
                 objectFit: 'contain',
@@ -110,7 +122,13 @@ function Layout({ children, onLogout }) {
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton>
+            <ListItemButton
+              selected={currentPage === item.path}
+              onClick={() => {
+                onNavigate(item.path);
+                setMobileOpen(false);
+              }}
+            >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
@@ -125,8 +143,8 @@ function Layout({ children, onLogout }) {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          ml: { md: `${drawerWidth}px` },
         }}
       >
         <Toolbar>
@@ -135,7 +153,7 @@ function Layout({ children, onLogout }) {
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: 2, display: { md: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
@@ -186,7 +204,7 @@ function Layout({ children, onLogout }) {
       </AppBar>
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
       >
         <Drawer
           variant="temporary"
@@ -196,7 +214,7 @@ function Layout({ children, onLogout }) {
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
         >
@@ -205,7 +223,7 @@ function Layout({ children, onLogout }) {
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
+            display: { xs: 'none', md: 'block' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
           open
@@ -215,7 +233,11 @@ function Layout({ children, onLogout }) {
       </Box>
       <Box
         component="main"
-        sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
+        sx={{
+          flexGrow: 1,
+          bgcolor: 'background.default',
+          overflow: 'auto',
+        }}
       >
         <Toolbar />
         {children}

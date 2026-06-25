@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { fetchAppConfig, fetchWebAppConfig, getCurrentUser, isAuthenticated } from '../services/api';
+import { fetchAppConfig, fetchWebAppConfig, fetchUserPreferences, getCurrentUser, isAuthenticated, getStoredUserPreferences } from '../services/api';
 import { createTheme } from '@mui/material/styles';
 
 const AppConfigContext = createContext();
@@ -13,14 +13,21 @@ export const AppConfigProvider = ({ children }) => {
   const [user, setUser] = useState(() => getCurrentUser());
   const [isLoggedIn, setIsLoggedIn] = useState(() => isAuthenticated());
   
-  // User preferences (stored in localStorage)
-  const [userThemeMode, setUserThemeMode] = useState(() => {
-    return localStorage.getItem('user_theme_mode') || null;
+  // User preferences from API (with localStorage cache)
+  const [userPreferences, setUserPreferences] = useState(() => {
+    // Load from localStorage first for fast initial render
+    return getStoredUserPreferences();
   });
-  const [userFontSize, setUserFontSize] = useState(() => {
-    const saved = localStorage.getItem('user_font_size');
-    return saved ? parseInt(saved, 10) : null;
-  });
+
+  // Custom setter that also saves to localStorage
+  const updateUserPreferencesState = (newPrefs) => {
+    setUserPreferences(prev => {
+      const updated = typeof newPrefs === 'function' ? newPrefs(prev) : newPrefs;
+      // Save to localStorage
+      localStorage.setItem('user_preferences', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -31,19 +38,38 @@ export const AppConfigProvider = ({ children }) => {
       const webData = await fetchWebAppConfig();
       setWebAppConfig(webData);
       
+      // Load user preferences if authenticated
+      if (isAuthenticated()) {
+        try {
+          const prefs = await fetchUserPreferences();
+          setUserPreferences(prefs);
+        } catch (error) {
+          console.error('Failed to load user preferences:', error);
+        }
+      }
+      
       setLoading(false);
     };
     loadConfig();
   }, []);
 
   // Update auth state helper
-  const updateAuthState = (userData, token) => {
+  const updateAuthState = async (userData, token) => {
     if (userData && token) {
       setUser(userData);
       setIsLoggedIn(true);
+      
+      // Load user preferences after login
+      try {
+        const prefs = await fetchUserPreferences();
+        setUserPreferences(prefs);
+      } catch (error) {
+        console.error('Failed to load user preferences:', error);
+      }
     } else {
       setUser(null);
       setIsLoggedIn(false);
+      setUserPreferences({});
     }
   };
 
@@ -51,35 +77,57 @@ export const AppConfigProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('user_preferences');
     setUser(null);
     setIsLoggedIn(false);
+    setUserPreferences({});
   };
 
-  // Get effective theme mode (user preference > admin config > default)
+  // Helper function to check if a feature is enabled
+  const isFeatureEnabled = (featureKey) => {
+    const value = webAppConfig?.[featureKey]?.value;
+    return value === true || value === '1' || value === 1 || value === 'true';
+  };
+
+  // Get effective theme mode (user preference > admin config > MUI default)
   const getThemeMode = () => {
     // Check if user can change theme
-    const canUserChange = webAppConfig?.['features.user_theme_switch']?.value !== false;
+    const canUserChange = isFeatureEnabled('features.user_theme_switch');
     
-    if (canUserChange && userThemeMode) {
-      return userThemeMode;
+    if (canUserChange && userPreferences['theme.mode']?.value) {
+      return userPreferences['theme.mode'].value;
     }
     
+    // Fall back to admin config
     return webAppConfig?.['theme.mode']?.value || 'light';
   };
 
   // Get effective font size
   const getFontSize = () => {
-    const canUserChange = webAppConfig?.['features.user_font_size']?.value !== false;
+    const canUserChange = isFeatureEnabled('features.user_font_size');
     
-    if (canUserChange && userFontSize) {
-      return parseInt(userFontSize, 10);
+    if (canUserChange && userPreferences['typography.base_font_size']?.value) {
+      return parseInt(userPreferences['typography.base_font_size'].value, 10);
     }
     
+    // Fall back to admin config, then MUI default (16)
     const configFontSize = webAppConfig?.['typography.base_font_size']?.value;
     return configFontSize ? parseInt(configFontSize, 10) : 16;
   };
 
-  // Get login gradient colors
+  // Get effective dense layout (user preference > admin config > MUI default)
+  const getDenseLayout = () => {
+    const canUserChange = isFeatureEnabled('features.user_dense_layout');
+    
+    if (canUserChange && userPreferences['layout.dense']?.value !== undefined) {
+      const value = userPreferences['layout.dense'].value;
+      return value === '1' || value === true || value === 1 || value === 'true';
+    }
+    
+    // Fall back to admin config
+    const configValue = webAppConfig?.['layout.dense']?.value;
+    return configValue === '1' || configValue === true || configValue === 1 || configValue === 'true';
+  };
   const getLoginGradient = () => {
     const start = webAppConfig?.['theme.login_gradient_start']?.value || '#667eea';
     const end = webAppConfig?.['theme.login_gradient_end']?.value || '#764ba2';
@@ -90,10 +138,10 @@ export const AppConfigProvider = ({ children }) => {
   const theme = useMemo(() => {
     const mode = getThemeMode();
     const fontSize = getFontSize();
+    const isDense = getDenseLayout();
     const primaryColor = webAppConfig?.['theme.primary_color']?.value || '#1976d2';
     const secondaryColor = webAppConfig?.['theme.secondary_color']?.value || '#dc004e';
     const fontFamily = webAppConfig?.['typography.font_family']?.value || 'Roboto';
-    const isDense = webAppConfig?.['layout.dense']?.value === true || webAppConfig?.['layout.dense']?.value === '1' || webAppConfig?.['layout.dense']?.value === 1;
 
     // Ensure fontSize is a valid number
     const validFontSize = typeof fontSize === 'number' && !isNaN(fontSize) ? fontSize : 16;
@@ -118,23 +166,53 @@ export const AppConfigProvider = ({ children }) => {
       },
       spacing: isDense ? 4 : 8,
     });
-  }, [webAppConfig, userThemeMode, userFontSize]);
+  }, [webAppConfig, userPreferences]);
 
   // Save user theme preference
-  const setUserTheme = (mode) => {
-    const canUserChange = webAppConfig?.['features.user_theme_switch']?.value !== false;
+  const setUserTheme = async (mode) => {
+    const canUserChange = isFeatureEnabled('features.user_theme_switch');
     if (canUserChange) {
-      setUserThemeMode(mode);
-      localStorage.setItem('user_theme_mode', mode);
+      try {
+        await updateUserPreferences({ 'theme.mode': mode });
+        updateUserPreferencesState(prev => ({
+          ...prev,
+          'theme.mode': { ...prev['theme.mode'], value: mode }
+        }));
+      } catch (error) {
+        console.error('Failed to save theme preference:', error);
+      }
     }
   };
 
   // Save user font size preference
-  const setUserFontSizePreference = (size) => {
-    const canUserChange = webAppConfig?.['features.user_font_size']?.value !== false;
+  const setUserFontSizePreference = async (size) => {
+    const canUserChange = isFeatureEnabled('features.user_font_size');
     if (canUserChange) {
-      setUserFontSize(size);
-      localStorage.setItem('user_font_size', size.toString());
+      try {
+        await updateUserPreferences({ 'typography.base_font_size': size.toString() });
+        updateUserPreferencesState(prev => ({
+          ...prev,
+          'typography.base_font_size': { ...prev['typography.base_font_size'], value: size.toString() }
+        }));
+      } catch (error) {
+        console.error('Failed to save font size preference:', error);
+      }
+    }
+  };
+
+  // Save user dense layout preference
+  const setUserDenseLayoutPreference = async (dense) => {
+    const canUserChange = isFeatureEnabled('features.user_dense_layout');
+    if (canUserChange) {
+      try {
+        await updateUserPreferences({ 'layout.dense': dense ? '1' : '0' });
+        updateUserPreferencesState(prev => ({
+          ...prev,
+          'layout.dense': { ...prev['layout.dense'], value: dense ? '1' : '0' }
+        }));
+      } catch (error) {
+        console.error('Failed to save dense layout preference:', error);
+      }
     }
   };
 
@@ -156,12 +234,13 @@ export const AppConfigProvider = ({ children }) => {
     getLogo: (type = 'universal') => config?.logos?.[type]?.url || null,
     getThemeMode,
     getFontSize,
+    getDenseLayout,
     getLoginGradient,
     // User preferences
-    userThemeMode,
-    userFontSize,
+    userPreferences,
     setUserTheme,
     setUserFontSizePreference,
+    setUserDenseLayoutPreference,
     // Check if signup is enabled
     isSignupEnabled: () => config?.['app.signup_enabled'] === true || config?.['app.signup_enabled'] === '1' || config?.['app.signup_enabled'] === 1,
   };

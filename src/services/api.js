@@ -200,6 +200,93 @@ export const isAuthenticated = () => {
 };
 
 /**
+ * Fetch user preferences from API
+ */
+export const fetchUserPreferences = async () => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await fetch(`${API_URL}/user/preferences`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user preferences');
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching user preferences:', error);
+    return {};
+  }
+};
+
+/**
+ * Update user preferences
+ */
+export const updateUserPreferences = async (preferences) => {
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await fetch(`${API_URL}/user/preferences`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(preferences),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to update preferences');
+    }
+
+    // Save to localStorage for fast retrieval on next load
+    const savedPrefs = JSON.parse(localStorage.getItem('user_preferences') || '{}');
+    Object.keys(preferences).forEach(key => {
+      savedPrefs[key] = { value: preferences[key] };
+    });
+    localStorage.setItem('user_preferences', JSON.stringify(savedPrefs));
+
+    return data;
+  } catch (error) {
+    console.error('Error updating user preferences:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get user preferences from localStorage (fast)
+ */
+export const getStoredUserPreferences = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user_preferences') || '{}');
+  } catch {
+    return {};
+  }
+};
+
+/**
+ * Clear stored user preferences
+ */
+export const clearStoredUserPreferences = () => {
+  localStorage.removeItem('user_preferences');
+};
+
+/**
  * Default Web App Config
  */
 const getDefaultWebAppConfig = () => ({

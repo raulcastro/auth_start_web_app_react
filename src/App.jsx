@@ -7,10 +7,12 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
 
 // Inner component that uses the theme from context
 function AppContent() {
   const [showRegister, setShowRegister] = useState(false);
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const { theme, isSignupEnabled, isLoggedIn, logout, updateAuthState } = useAppConfig();
 
   // Prevent showing register if signup is disabled
@@ -34,6 +36,16 @@ function AppContent() {
     logout();
   };
 
+  const renderContent = () => {
+    switch (currentPage) {
+      case 'settings':
+        return <Settings />;
+      case 'dashboard':
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -54,8 +66,10 @@ function AppContent() {
       ) : (
         <Layout 
           onLogout={handleLogout}
+          onNavigate={setCurrentPage}
+          currentPage={currentPage}
         >
-          <Dashboard />
+          {renderContent()}
         </Layout>
       )}
     </ThemeProvider>
