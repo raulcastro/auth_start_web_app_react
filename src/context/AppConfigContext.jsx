@@ -216,6 +216,20 @@ export const AppConfigProvider = ({ children }) => {
     }
   };
 
+  // Auth method helpers
+  const isAuthMethodEnabled = (method) => {
+    const value = config?.[`auth.methods.${method}`];
+    return value === true || value === '1' || value === 1 || value === 'true';
+  };
+
+  const getAuthProvider = () => {
+    return config?.['auth.provider'] || 'database';
+  };
+
+  const isFirebaseAuth = () => {
+    return getAuthProvider() === 'firebase';
+  };
+
   const value = {
     config,
     webAppConfig,
@@ -243,6 +257,10 @@ export const AppConfigProvider = ({ children }) => {
     setUserDenseLayoutPreference,
     // Check if signup is enabled
     isSignupEnabled: () => config?.['app.signup_enabled'] === true || config?.['app.signup_enabled'] === '1' || config?.['app.signup_enabled'] === 1,
+    // Auth methods
+    isAuthMethodEnabled,
+    getAuthProvider,
+    isFirebaseAuth,
   };
 
   return (
