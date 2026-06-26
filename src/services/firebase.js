@@ -1,7 +1,9 @@
 /**
  * Firebase Authentication Service
- * Handles all Firebase Auth operations
+ * Handles all Firebase Auth operations and syncs with Laravel backend
  */
+
+import { API_BASE_URL } from './api';
 
 // Firebase config will be loaded from API
 let firebaseConfig = null;
@@ -40,7 +42,46 @@ export const initFirebase = async (config) => {
 };
 
 /**
+ * Sync Firebase user with Laravel backend
+ * This creates/updates the user in the Laravel database
+ */
+const syncUserWithBackend = async (idToken, provider = 'password', name = '') => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/firebase/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        id_token: idToken,
+        provider: provider,
+        name: name,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to sync user with backend');
+    }
+
+    // Store Laravel token
+    if (data.data && data.data.token) {
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Backend sync error:', error);
+    throw error;
+  }
+};
+
+/**
  * Login with email/password using Firebase
+ * Then syncs with Laravel backend
  */
 export const firebaseLoginWithEmail = async (email, password) => {
   try {
@@ -50,19 +91,10 @@ export const firebaseLoginWithEmail = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const idToken = await userCredential.user.getIdToken();
     
-    return {
-      success: true,
-      data: {
-        user: {
-          id: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: userCredential.user.displayName || email.split('@')[0],
-          email_verified: userCredential.user.emailVerified,
-        },
-        token: idToken,
-        provider: 'firebase',
-      },
-    };
+    // Sync with Laravel backend
+    const backendResponse = await syncUserWithBackend(idToken, 'password');
+    
+    return backendResponse;
   } catch (error) {
     console.error('Firebase login error:', error);
     return {
@@ -74,6 +106,7 @@ export const firebaseLoginWithEmail = async (email, password) => {
 
 /**
  * Register with email/password using Firebase
+ * Then syncs with Laravel backend
  */
 export const firebaseRegisterWithEmail = async (email, password, name = '') => {
   try {
@@ -89,19 +122,10 @@ export const firebaseRegisterWithEmail = async (email, password, name = '') => {
     
     const idToken = await userCredential.user.getIdToken();
     
-    return {
-      success: true,
-      data: {
-        user: {
-          id: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: name || email.split('@')[0],
-          email_verified: userCredential.user.emailVerified,
-        },
-        token: idToken,
-        provider: 'firebase',
-      },
-    };
+    // Sync with Laravel backend
+    const backendResponse = await syncUserWithBackend(idToken, 'password', name);
+    
+    return backendResponse;
   } catch (error) {
     console.error('Firebase register error:', error);
     return {
@@ -113,6 +137,7 @@ export const firebaseRegisterWithEmail = async (email, password, name = '') => {
 
 /**
  * Login with Google using Firebase
+ * Then syncs with Laravel backend
  */
 export const firebaseLoginWithGoogle = async () => {
   try {
@@ -123,20 +148,10 @@ export const firebaseLoginWithGoogle = async () => {
     const userCredential = await signInWithPopup(auth, provider);
     const idToken = await userCredential.user.getIdToken();
     
-    return {
-      success: true,
-      data: {
-        user: {
-          id: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: userCredential.user.displayName,
-          photo_url: userCredential.user.photoURL,
-          email_verified: userCredential.user.emailVerified,
-        },
-        token: idToken,
-        provider: 'firebase',
-      },
-    };
+    // Sync with Laravel backend
+    const backendResponse = await syncUserWithBackend(idToken, 'google');
+    
+    return backendResponse;
   } catch (error) {
     console.error('Firebase Google login error:', error);
     return {
@@ -148,6 +163,7 @@ export const firebaseLoginWithGoogle = async () => {
 
 /**
  * Login with Apple using Firebase
+ * Then syncs with Laravel backend
  */
 export const firebaseLoginWithApple = async () => {
   try {
@@ -158,19 +174,10 @@ export const firebaseLoginWithApple = async () => {
     const userCredential = await signInWithPopup(auth, provider);
     const idToken = await userCredential.user.getIdToken();
     
-    return {
-      success: true,
-      data: {
-        user: {
-          id: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: userCredential.user.displayName,
-          email_verified: userCredential.user.emailVerified,
-        },
-        token: idToken,
-        provider: 'firebase',
-      },
-    };
+    // Sync with Laravel backend
+    const backendResponse = await syncUserWithBackend(idToken, 'apple');
+    
+    return backendResponse;
   } catch (error) {
     console.error('Firebase Apple login error:', error);
     return {
@@ -182,6 +189,7 @@ export const firebaseLoginWithApple = async () => {
 
 /**
  * Login with Facebook using Firebase
+ * Then syncs with Laravel backend
  */
 export const firebaseLoginWithFacebook = async () => {
   try {
@@ -192,20 +200,10 @@ export const firebaseLoginWithFacebook = async () => {
     const userCredential = await signInWithPopup(auth, provider);
     const idToken = await userCredential.user.getIdToken();
     
-    return {
-      success: true,
-      data: {
-        user: {
-          id: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: userCredential.user.displayName,
-          photo_url: userCredential.user.photoURL,
-          email_verified: userCredential.user.emailVerified,
-        },
-        token: idToken,
-        provider: 'firebase',
-      },
-    };
+    // Sync with Laravel backend
+    const backendResponse = await syncUserWithBackend(idToken, 'facebook');
+    
+    return backendResponse;
   } catch (error) {
     console.error('Firebase Facebook login error:', error);
     return {
@@ -217,6 +215,7 @@ export const firebaseLoginWithFacebook = async () => {
 
 /**
  * Login with GitHub using Firebase
+ * Then syncs with Laravel backend
  */
 export const firebaseLoginWithGitHub = async () => {
   try {
@@ -227,20 +226,10 @@ export const firebaseLoginWithGitHub = async () => {
     const userCredential = await signInWithPopup(auth, provider);
     const idToken = await userCredential.user.getIdToken();
     
-    return {
-      success: true,
-      data: {
-        user: {
-          id: userCredential.user.uid,
-          email: userCredential.user.email,
-          name: userCredential.user.displayName,
-          photo_url: userCredential.user.photoURL,
-          email_verified: userCredential.user.emailVerified,
-        },
-        token: idToken,
-        provider: 'firebase',
-      },
-    };
+    // Sync with Laravel backend
+    const backendResponse = await syncUserWithBackend(idToken, 'github');
+    
+    return backendResponse;
   } catch (error) {
     console.error('Firebase GitHub login error:', error);
     return {
@@ -251,13 +240,17 @@ export const firebaseLoginWithGitHub = async () => {
 };
 
 /**
- * Logout from Firebase
+ * Logout from Firebase and clear Laravel token
  */
 export const firebaseLogout = async () => {
   try {
     if (!auth) return;
     const { signOut } = await import('firebase/auth');
     await signOut(auth);
+    
+    // Clear Laravel token
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
   } catch (error) {
     console.error('Firebase logout error:', error);
   }
@@ -275,4 +268,12 @@ export const getCurrentFirebaseUser = () => {
  */
 export const isFirebaseAuthenticated = () => {
   return !!auth?.currentUser;
+};
+
+/**
+ * Get Firebase ID token (useful for debugging)
+ */
+export const getFirebaseIdToken = async () => {
+  if (!auth?.currentUser) return null;
+  return await auth.currentUser.getIdToken();
 };
