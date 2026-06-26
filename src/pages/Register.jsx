@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -15,6 +15,7 @@ import {
 import { PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import { useAppConfig } from '../context/AppConfigContext';
 import { registerUser } from '../services/api';
+import { initFirebase, firebaseRegisterWithEmail } from '../services/firebase';
 
 function Register({ onSwitchToLogin, onRegisterSuccess }) {
   const [formData, setFormData] = useState({
@@ -27,8 +28,31 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [firebaseInitialized, setFirebaseInitialized] = useState(false);
 
-  const { getThemeMode, webAppConfig, updateAuthState } = useAppConfig();
+  const { 
+    getThemeMode, 
+    webAppConfig, 
+    config,
+    updateAuthState,
+    isFirebaseAuth,
+  } = useAppConfig();
+
+  // Initialize Firebase when config is loaded and Firebase is the provider
+  useEffect(() => {
+    const init = async () => {
+      if (isFirebaseAuth() && config && !firebaseInitialized) {
+        try {
+          await initFirebase(config);
+          setFirebaseInitialized(true);
+        } catch (err) {
+          console.error('Failed to initialize Firebase:', err);
+          setError('Failed to initialize authentication. Please try again.');
+        }
+      }
+    };
+    init();
+  }, [config, isFirebaseAuth, firebaseInitialized]);
 
   const handleChange = (e) => {
     setFormData({
@@ -50,14 +74,26 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
     setLoading(true);
 
     try {
-      const userData = {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.email,
-        password: formData.password,
-        password_confirmation: formData.confirmPassword,
-      };
-
-      const response = await registerUser(userData);
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      let response;
+      
+      if (isFirebaseAuth()) {
+        // Use Firebase Auth
+        response = await firebaseRegisterWithEmail(
+          formData.email, 
+          formData.password, 
+          fullName
+        );
+      } else {
+        // Use Sanctum/Laravel Auth
+        const userData = {
+          name: fullName,
+          email: formData.email,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+        };
+        response = await registerUser(userData);
+      }
 
       if (response.success && response.data) {
         setSuccess('Registration successful! Redirecting...');
@@ -155,7 +191,7 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   autoFocus
                   value={formData.firstName}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -168,7 +204,7 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   autoComplete="family-name"
                   value={formData.lastName}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -181,7 +217,7 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   autoComplete="email"
                   value={formData.email}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -195,7 +231,7 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -208,7 +244,7 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   id="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  disabled={loading}
+                  disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 />
               </Grid>
             </Grid>
@@ -218,7 +254,7 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              disabled={loading}
+              disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
             >
               {loading ? <CircularProgress size={24} /> : 'Sign Up'}
             </Button>
@@ -238,6 +274,17 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
               </Grid>
             </Grid>
           </Box>
+          
+          {/* Provider Badge */}
+          {isFirebaseAuth() ? (
+            <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
+              Secured by Firebase Authentication
+            </Alert>
+          ) : (
+            <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
+              Secured by Laravel Sanctum
+            </Alert>
+          )}
         </Box>
       </Paper>
     </Box>

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { fetchAppConfig, fetchWebAppConfig, fetchUserPreferences, getCurrentUser, isAuthenticated, getStoredUserPreferences, updateUserPreferences } from '../services/api';
+import { firebaseLogout } from '../services/firebase';
 import { createTheme } from '@mui/material/styles';
 
 const AppConfigContext = createContext();
@@ -74,7 +75,15 @@ export const AppConfigProvider = ({ children }) => {
   };
 
   // Logout helper
-  const logout = () => {
+  const logout = async () => {
+    // Try Firebase logout first (if it was initialized)
+    try {
+      await firebaseLogout();
+    } catch (e) {
+      // Ignore errors if Firebase wasn't initialized
+    }
+    
+    // Clear localStorage
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
     localStorage.removeItem('user_preferences');

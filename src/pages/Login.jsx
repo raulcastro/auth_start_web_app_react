@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -18,6 +18,7 @@ import {
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { useAppConfig } from '../context/AppConfigContext';
 import { loginUser } from '../services/api';
+import { initFirebase, firebaseLoginWithEmail, firebaseLoginWithGoogle, firebaseLoginWithApple, firebaseLoginWithFacebook, firebaseLoginWithGitHub } from '../services/firebase';
 
 // Social login icons (using SVG for now, can be replaced with actual icons)
 const GoogleIcon = () => (
@@ -53,6 +54,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [firebaseInitialized, setFirebaseInitialized] = useState(false);
   
   const { 
     getTitle, 
@@ -60,6 +62,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
     getLogo, 
     configLoading, 
     webAppConfig,
+    config,
     getThemeMode,
     isSignupEnabled,
     updateAuthState,
@@ -67,13 +70,37 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
     isFirebaseAuth,
   } = useAppConfig();
 
+  // Initialize Firebase when config is loaded and Firebase is the provider
+  useEffect(() => {
+    const init = async () => {
+      if (isFirebaseAuth() && config && !firebaseInitialized) {
+        try {
+          await initFirebase(config);
+          setFirebaseInitialized(true);
+        } catch (err) {
+          console.error('Failed to initialize Firebase:', err);
+          setError('Failed to initialize authentication. Please try again.');
+        }
+      }
+    };
+    init();
+  }, [config, isFirebaseAuth, firebaseInitialized]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await loginUser({ email, password });
+      let response;
+      
+      if (isFirebaseAuth()) {
+        // Use Firebase Auth
+        response = await firebaseLoginWithEmail(email, password);
+      } else {
+        // Use Sanctum/Laravel Auth
+        response = await loginUser({ email, password });
+      }
       
       if (response.success && response.data) {
         updateAuthState(response.data.user, response.data.token);
@@ -91,14 +118,42 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
   };
 
   const handleSocialLogin = async (provider) => {
+    if (!isFirebaseAuth()) {
+      setError('Social login is only available with Firebase authentication');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
-      // TODO: Implement Firebase social login
-      // This will be implemented when Firebase Auth is fully integrated
-      console.log(`Social login with ${provider} - Firebase Auth integration pending`);
-      setError(`${provider} login coming soon with Firebase integration`);
+      let response;
+      
+      switch (provider) {
+        case 'Google':
+          response = await firebaseLoginWithGoogle();
+          break;
+        case 'Apple':
+          response = await firebaseLoginWithApple();
+          break;
+        case 'Facebook':
+          response = await firebaseLoginWithFacebook();
+          break;
+        case 'GitHub':
+          response = await firebaseLoginWithGitHub();
+          break;
+        default:
+          throw new Error(`Unknown provider: ${provider}`);
+      }
+      
+      if (response.success && response.data) {
+        updateAuthState(response.data.user, response.data.token);
+        if (onLoginSuccess) {
+          onLoginSuccess(response.data);
+        }
+      } else {
+        setError(response.message || `${provider} login failed`);
+      }
     } catch (err) {
       setError(err.message || `Failed to login with ${provider}`);
     } finally {
@@ -126,6 +181,9 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
   
   const socialEnabled = googleEnabled || appleEnabled || facebookEnabled || githubEnabled;
   const showDivider = emailEnabled && socialEnabled;
+
+  // Show loading while Firebase initializes
+  const showFirebaseLoading = isFirebaseAuth() && !firebaseInitialized && !configLoading;
 
   return (
     <Box
@@ -163,7 +221,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
             alignItems: 'center',
           }}
         >
-          {configLoading ? (
+          {configLoading || showFirebaseLoading ? (
             <CircularProgress sx={{ m: 2 }} />
           ) : logoUrl ? (
             <Avatar
@@ -185,11 +243,11 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
           )}
           
           <Typography component="h1" variant="h5" fontWeight={500}>
-            {configLoading ? 'Loading...' : getTitle()}
+            {configLoading || showFirebaseLoading ? 'Loading...' : getTitle()}
           </Typography>
           
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {configLoading ? '' : getSubtitle()}
+            {configLoading || showFirebaseLoading ? '' : getSubtitle()}
           </Typography>
           
           {error && (
@@ -198,8 +256,8 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
             </Alert>
           )}
           
-          {/* Social Login Buttons */}
-          {socialEnabled && (
+          {/* Social Login Buttons - Only for Firebase */}
+          {isFirebaseAuth() && socialEnabled && (
             <Stack spacing={1.5} sx={{ mt: 3, width: '100%' }}>
               {googleEnabled && (
                 <Button
@@ -208,7 +266,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   size="large"
                   startIcon={<GoogleIcon />}
                   onClick={() => handleSocialLogin('Google')}
-                  disabled={loading}
+                  disabled={loading || !firebaseInitialized}
                   sx={{ 
                     textTransform: 'none',
                     borderColor: 'divider',
@@ -228,7 +286,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   size="large"
                   startIcon={<AppleIcon />}
                   onClick={() => handleSocialLogin('Apple')}
-                  disabled={loading}
+                  disabled={loading || !firebaseInitialized}
                   sx={{ 
                     textTransform: 'none',
                     borderColor: 'divider',
@@ -248,7 +306,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   size="large"
                   startIcon={<FacebookIcon />}
                   onClick={() => handleSocialLogin('Facebook')}
-                  disabled={loading}
+                  disabled={loading || !firebaseInitialized}
                   sx={{ 
                     textTransform: 'none',
                     borderColor: 'divider',
@@ -268,7 +326,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   size="large"
                   startIcon={<GitHubIcon />}
                   onClick={() => handleSocialLogin('GitHub')}
-                  disabled={loading}
+                  disabled={loading || !firebaseInitialized}
                   sx={{ 
                     textTransform: 'none',
                     borderColor: 'divider',
@@ -308,7 +366,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
+                disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
               />
               
               <TextField
@@ -322,7 +380,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
+                disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
               />
               
               <FormControlLabel
@@ -332,7 +390,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                     color="primary"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={loading}
+                    disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                   />
                 }
                 label="Remember me"
@@ -344,7 +402,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 variant="contained"
                 size="large"
                 sx={{ mt: 3, mb: 2, py: 1.2 }}
-                disabled={loading}
+                disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
               >
                 {loading ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
@@ -389,10 +447,14 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
             </Box>
           )}
           
-          {/* Firebase Auth Notice */}
-          {isFirebaseAuth() && (
+          {/* Provider Badge */}
+          {isFirebaseAuth() ? (
             <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
               Secured by Firebase Authentication
+            </Alert>
+          ) : (
+            <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
+              Secured by Laravel Sanctum
             </Alert>
           )}
         </Box>
