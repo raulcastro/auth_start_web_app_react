@@ -17,6 +17,7 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -34,6 +35,7 @@ const drawerWidth = 240;
 function Layout({ children, onLogout, onNavigate, currentPage }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [isTogglingTheme, setIsTogglingTheme] = useState(false);
   const theme = useTheme();
   const { 
     getTitle, 
@@ -49,10 +51,19 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleThemeToggle = () => {
-    const currentMode = getThemeMode();
-    const newMode = currentMode === 'dark' ? 'light' : 'dark';
-    setUserTheme(newMode);
+  const handleThemeToggle = async () => {
+    if (isTogglingTheme) return;
+    
+    setIsTogglingTheme(true);
+    try {
+      const currentMode = getThemeMode();
+      const newMode = currentMode === 'dark' ? 'light' : 'dark';
+      await setUserTheme(newMode);
+    } catch (error) {
+      console.error('Failed to toggle theme:', error);
+    } finally {
+      setIsTogglingTheme(false);
+    }
   };
 
   const handleMenuOpen = (event) => {
@@ -161,9 +172,16 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
             Dashboard
           </Typography>
           {canToggle && (
-            <IconButton color="inherit" onClick={handleThemeToggle} sx={{ mr: 1 }}>
-              {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-            </IconButton>
+            <Tooltip title={currentMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+              <IconButton 
+                color="inherit" 
+                onClick={handleThemeToggle} 
+                sx={{ mr: 1 }}
+                disabled={isTogglingTheme}
+              >
+                {currentMode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+              </IconButton>
+            </Tooltip>
           )}
           
           {/* User Menu */}
