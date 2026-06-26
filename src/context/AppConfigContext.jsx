@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { fetchAppConfig, fetchWebAppConfig, fetchUserPreferences, getCurrentUser, isAuthenticated, getStoredUserPreferences } from '../services/api';
+import { fetchAppConfig, fetchWebAppConfig, fetchUserPreferences, getCurrentUser, isAuthenticated, getStoredUserPreferences, updateUserPreferences } from '../services/api';
 import { createTheme } from '@mui/material/styles';
 
 const AppConfigContext = createContext();
