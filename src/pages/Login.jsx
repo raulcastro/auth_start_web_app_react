@@ -28,7 +28,7 @@ import {
   firebaseLoginWithGitHub,
 } from '../services/firebase';
 
-// Social login icons (using SVG for now, can be replaced with actual icons)
+// Social login icons
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -80,10 +80,8 @@ function Login() {
     isFirebaseAuth,
   } = useAppConfig();
 
-  // Prevent showing the Sign Up link before config has loaded.
   const signupEnabled = config ? isSignupEnabled() : false;
 
-  // Initialize Firebase when config is loaded and Firebase is the provider
   useEffect(() => {
     const init = async () => {
       if (isFirebaseAuth() && config && !firebaseInitialized) {
@@ -184,7 +182,6 @@ function Login() {
 
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
 
-  // Build gradient with 3 colors
   const start = webAppConfig?.['theme.login_gradient_start']?.value || '#4f46e5';
   const middle = webAppConfig?.['theme.login_gradient_middle']?.value || '#7c3aed';
   const end = webAppConfig?.['theme.login_gradient_end']?.value || '#c026d3';
@@ -193,7 +190,6 @@ function Login() {
 
   const isDark = getThemeMode() === 'dark';
 
-  // Check which auth methods are enabled
   const emailEnabled = isAuthMethodEnabled('email');
   const googleEnabled = isAuthMethodEnabled('google');
   const appleEnabled = isAuthMethodEnabled('apple');
@@ -202,8 +198,6 @@ function Login() {
 
   const socialEnabled = googleEnabled || appleEnabled || facebookEnabled || githubEnabled;
   const showDivider = emailEnabled && socialEnabled;
-
-  // Show loading while Firebase initializes
   const showFirebaseLoading = isFirebaseAuth() && !firebaseInitialized && !configLoading;
 
   return (
@@ -223,63 +217,192 @@ function Login() {
         right: 0,
         bottom: 0,
         overflow: 'auto',
+        p: { xs: 2, sm: 4 },
       }}
     >
       <CssBaseline />
+      
+      {/* Unified Card Container */}
       <Paper
-        elevation={6}
+        elevation={0}
         sx={{
-          p: 4,
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
           width: '100%',
-          maxWidth: 400,
-          borderRadius: 2,
+          maxWidth: { xs: 420, md: 900 },
+          minHeight: { xs: 'auto', md: 480 },
+          borderRadius: 4,
+          overflow: 'hidden',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          bgcolor: 'transparent',
         }}
       >
+        {/* Left Side - Branding with Enhanced Glow */}
         <Box
           sx={{
+            flex: { xs: 'none', md: 1 },
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            justifyContent: 'center',
+            p: { xs: 3, md: 4 },
+            background: isDark
+              ? 'linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%)'
+              : gradient,
+            color: 'white',
+            textAlign: 'center',
+            minHeight: { xs: 240, md: 'auto' },
+            position: 'relative',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: { xs: 280, md: 400 },
+              height: { xs: 280, md: 400 },
+              background: 'radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 70%)',
+              borderRadius: '50%',
+              pointerEvents: 'none',
+            },
           }}
         >
-          {configLoading || showFirebaseLoading ? (
-            <CircularProgress sx={{ m: 2 }} />
-          ) : logoUrl ? (
-            <Avatar
-              src={logoUrl}
-              sx={{
-                m: 2,
-                width: 160,
-                height: 160,
-                bgcolor: 'transparent',
-                '& img': {
-                  objectFit: 'contain',
-                },
-              }}
-            />
-          ) : (
-            <Avatar sx={{ m: 2, width: 160, height: 160, bgcolor: 'primary.main' }}>
-              <LockOutlinedIcon sx={{ fontSize: 80 }} />
-            </Avatar>
-          )}
+          {/* Logo con glow */}
+          <Box
+            sx={{
+              position: 'relative',
+              mb: 3,
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: { xs: 180, md: 260 },
+                height: { xs: 180, md: 260 },
+                background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 65%)',
+                borderRadius: '50%',
+                filter: 'blur(15px)',
+                pointerEvents: 'none',
+              },
+            }}
+          >
+            {configLoading || showFirebaseLoading ? (
+              <CircularProgress sx={{ mb: 3 }} color="inherit" />
+            ) : logoUrl ? (
+              <Avatar
+                src={logoUrl}
+                alt={getTitle()}
+                sx={{
+                  width: { xs: 125, md: 170 },
+                  height: { xs: 125, md: 170 },
+                  bgcolor: 'transparent',
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3)',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              />
+            ) : (
+              <Avatar
+                sx={{
+                  width: { xs: 125, md: 170 },
+                  height: { xs: 125, md: 170 },
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3)',
+                  border: '3px solid rgba(255,255,255,0.3)',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
+                <LockOutlinedIcon sx={{ fontSize: { xs: 65, md: 90 } }} />
+              </Avatar>
+            )}
+          </Box>
 
-          <Typography component="h1" variant="h5" fontWeight={500}>
-            {configLoading || showFirebaseLoading ? 'Loading...' : getTitle()}
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '2.5rem', md: '3.5rem' },
+              mb: 2,
+              textShadow: '0 4px 20px rgba(0,0,0,0.4)',
+              letterSpacing: '-0.02em',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            {getTitle()}
           </Typography>
 
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            {configLoading || showFirebaseLoading ? '' : getSubtitle()}
+          <Typography
+            variant="h6"
+            sx={{
+              fontSize: { xs: '1.1rem', md: '1.3rem' },
+              opacity: 0.95,
+              maxWidth: 340,
+              lineHeight: 1.5,
+              fontWeight: 400,
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            {getSubtitle() || 'Secure authentication for your applications'}
+          </Typography>
+        </Box>
+
+        {/* Right Side - Login Form */}
+        <Box
+          sx={{
+            flex: { xs: 'none', md: 1.2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            p: { xs: 3, md: 4 },
+            bgcolor: 'background.paper',
+          }}
+        >
+          {/* LOG IN Title - Smaller */}
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '2.2rem', md: '2.8rem' },
+              mb: 0.5,
+              textAlign: 'center',
+              background: isDark
+                ? 'linear-gradient(135deg, #fff 0%, #ccc 100%)'
+                : 'linear-gradient(135deg, #1a1a1a 0%, #4a4a4a 100%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Log In
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              mb: 3,
+              textAlign: 'center',
+              fontSize: '0.9rem',
+            }}
+          >
+            Welcome back! Please enter your details.
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
+            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
               {error}
             </Alert>
           )}
 
-          {/* Social Login Buttons - Only for Firebase */}
+          {/* Social Login */}
           {isFirebaseAuth() && socialEnabled && (
-            <Stack spacing={1.5} sx={{ mt: 3, width: '100%' }}>
+            <Stack spacing={2} sx={{ mb: 3 }}>
               {googleEnabled && (
                 <Button
                   fullWidth
@@ -290,10 +413,9 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
+                    py: 1.4,
                     borderColor: 'divider',
-                    '&:hover': {
-                      borderColor: 'text.primary',
-                    },
+                    borderRadius: 2,
                   }}
                 >
                   Continue with Google
@@ -310,10 +432,9 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
+                    py: 1.4,
                     borderColor: 'divider',
-                    '&:hover': {
-                      borderColor: 'text.primary',
-                    },
+                    borderRadius: 2,
                   }}
                 >
                   Continue with Apple
@@ -330,10 +451,9 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
+                    py: 1.4,
                     borderColor: 'divider',
-                    '&:hover': {
-                      borderColor: 'text.primary',
-                    },
+                    borderRadius: 2,
                   }}
                 >
                   Continue with Facebook
@@ -350,10 +470,9 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
+                    py: 1.4,
                     borderColor: 'divider',
-                    '&:hover': {
-                      borderColor: 'text.primary',
-                    },
+                    borderRadius: 2,
                   }}
                 >
                   Continue with GitHub
@@ -362,20 +481,17 @@ function Login() {
             </Stack>
           )}
 
-          {/* Divider */}
           {showDivider && (
-            <Box sx={{ width: '100%', mt: 3, mb: 2 }}>
-              <Divider>
-                <Typography variant="body2" color="text.secondary">
-                  or
-                </Typography>
-              </Divider>
-            </Box>
+            <Divider sx={{ mb: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                or
+              </Typography>
+            </Divider>
           )}
 
-          {/* Email/Password Form */}
+          {/* Email Form */}
           {emailEnabled && (
-            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
+            <Box component="form" onSubmit={handleSubmit}>
               <TextField
                 margin="normal"
                 required
@@ -390,6 +506,12 @@ function Login() {
                 disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 error={!!fieldErrors.email}
                 helperText={fieldErrors.email?.[0] || ''}
+                sx={{ 
+                  mb: 2.5,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  },
+                }}
               />
 
               <TextField
@@ -406,82 +528,97 @@ function Login() {
                 disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 error={!!fieldErrors.password}
                 helperText={fieldErrors.password?.[0] || ''}
+                sx={{ 
+                  mb: 2.5,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                  },
+                }}
               />
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    value="remember"
-                    color="primary"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
-                  />
-                }
-                label="Remember me"
-              />
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  mb: 3,
+                }}
+              >
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label="Remember me"
+                />
+
+                <Link
+                  component={RouterLink}
+                  to="/password-reset"
+                  variant="body2"
+                  underline="hover"
+                  sx={{ fontWeight: 500 }}
+                >
+                  Forgot password?
+                </Link>
+              </Box>
 
               <Button
                 type="submit"
                 fullWidth
                 variant="contained"
                 size="large"
-                sx={{ mt: 3, mb: 2, py: 1.2 }}
                 disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
-              >
-                {loading ? <CircularProgress size={24} /> : 'Sign In'}
-              </Button>
-
-              <Stack
-                direction="row"
-                spacing={2}
                 sx={{
-                  mt: 2,
-                  justifyContent: signupEnabled ? 'space-between' : 'center',
-                  alignItems: 'center',
+                  py: 1.6,
+                  mb: 3,
+                  fontSize: '1.15rem',
+                  fontWeight: 700,
+                  borderRadius: 2.5,
+                  textTransform: 'none',
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
                 }}
               >
-                <Link
-                  component={RouterLink}
-                  to="/password-reset"
-                  variant="body2"
-                  underline="hover"
-                  sx={{
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Forgot password?
-                </Link>
+                {loading ? <CircularProgress size={26} /> : 'Log In'}
+              </Button>
 
-                {signupEnabled && (
-                  <Link
-                    component={RouterLink}
-                    to="/register"
-                    variant="body2"
-                    underline="hover"
-                    sx={{
-                      fontWeight: 500,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    Sign Up
-                  </Link>
-                )}
-              </Stack>
+              {signupEnabled && (
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Don't have an account?{' '}
+                    <Link
+                      component={RouterLink}
+                      to="/register"
+                      underline="hover"
+                      sx={{ fontWeight: 600 }}
+                    >
+                      Sign up
+                    </Link>
+                  </Typography>
+                </Box>
+              )}
             </Box>
           )}
 
           {/* Provider Badge */}
-          {isFirebaseAuth() ? (
-            <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
-              Secured by Firebase Authentication
-            </Alert>
-          ) : (
-            <Alert severity="info" sx={{ mt: 2, width: '100%' }}>
-              Secured by Laravel Sanctum
-            </Alert>
-          )}
+          <Alert
+            severity="info"
+            sx={{
+              mt: 3,
+              borderRadius: 2,
+              '& .MuiAlert-message': {
+                width: '100%',
+                textAlign: 'center',
+              },
+            }}
+          >
+            {isFirebaseAuth()
+              ? 'Secured by Firebase Authentication'
+              : 'Secured by Laravel Sanctum'}
+          </Alert>
         </Box>
       </Paper>
     </Box>
