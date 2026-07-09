@@ -435,9 +435,11 @@ function Login() {
               <Stack
                 direction="row"
                 spacing={2}
-                justifyContent={signupEnabled ? 'space-between' : 'center'}
-                alignItems="center"
-                sx={{ mt: 2 }}
+                sx={{
+                  mt: 2,
+                  justifyContent: signupEnabled ? 'space-between' : 'center',
+                  alignItems: 'center',
+                }}
               >
                 <Link
                   component={RouterLink}

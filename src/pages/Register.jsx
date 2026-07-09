@@ -283,7 +283,7 @@ function Register() {
               {loading ? <CircularProgress size={24} /> : 'Sign Up'}
             </Button>
 
-            <Grid container justifyContent="flex-end">
+            <Grid container sx={{ justifyContent: 'flex-end' }}>
               <Grid>
                 <Link
                   component={RouterLink}

@@ -5,8 +5,8 @@ import { STORAGE_BASE_URL } from '../services/api';
  * Favicons Component
  *
  * Dynamically injects favicon tags based on backend configuration.
- * If generated favicons exist in the backend, uses them.
- * Otherwise, falls back to the active universal logo or the default favicon.
+ * Uses a cache buster provided by the API so that logo/favicon changes
+ * are picked up immediately by browsers and clients.
  *
  * Note: Uses image loading strategy instead of fetch to avoid CORS issues
  * with static files in storage.
@@ -17,14 +17,14 @@ function Favicons() {
   useEffect(() => {
     const loadFavicons = async () => {
       try {
-        // Check if generated favicons exist by trying to load an image.
-        // This avoids CORS issues since we're loading an image, not making an API call.
-        const faviconExists = await checkGeneratedFaviconExists();
+        const config = await fetchConfig();
+        const cacheBuster = config?.['app.logo_cache_buster'];
+        const faviconExists = await checkGeneratedFaviconExists(cacheBuster);
 
         if (faviconExists) {
-          injectGeneratedFavicons();
+          injectGeneratedFavicons(cacheBuster);
         } else {
-          await injectLogoFallback();
+          injectLogoFallback(config);
         }
       } catch (error) {
         console.log('Favicon check failed, using default:', error);
@@ -37,11 +37,24 @@ function Favicons() {
     loadFavicons();
   }, []);
 
+  const fetchConfig = async () => {
+    try {
+      const response = await fetch(`${STORAGE_BASE_URL}/api/config`);
+      if (!response.ok) {
+        return null;
+      }
+      const data = await response.json();
+      return data.data || null;
+    } catch {
+      return null;
+    }
+  };
+
   /**
    * Check if generated favicon exists by attempting to load it as an image.
    * A cache buster is used only here to avoid stale 404 responses.
    */
-  const checkGeneratedFaviconExists = () => {
+  const checkGeneratedFaviconExists = (cacheBuster) => {
     return new Promise((resolve) => {
       const img = new Image();
       const timeout = setTimeout(() => {
@@ -58,19 +71,18 @@ function Favicons() {
         resolve(false);
       };
 
-      img.src = `${STORAGE_BASE_URL}/storage/favicons/favicon.ico?t=${Date.now()}`;
+      const buster = cacheBuster ? `?v=${cacheBuster}` : `?t=${Date.now()}`;
+      img.src = `${STORAGE_BASE_URL}/storage/favicons/favicon.ico${buster}`;
     });
   };
 
-  /**
-   * Build an absolute URL relative to the storage base URL.
-   */
-  const toAbsoluteUrl = (relativeUrl) => {
-    if (!relativeUrl) return null;
-    return relativeUrl.startsWith('http') ? relativeUrl : `${STORAGE_BASE_URL}${relativeUrl}`;
+  const withCacheBuster = (url, cacheBuster) => {
+    if (!cacheBuster) return url;
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}v=${cacheBuster}`;
   };
 
-  const injectGeneratedFavicons = () => {
+  const injectGeneratedFavicons = (cacheBuster) => {
     const baseUrl = `${STORAGE_BASE_URL}/storage/favicons`;
 
     const faviconTags = [
@@ -90,7 +102,7 @@ function Favicons() {
       link.rel = tag.rel;
       if (tag.sizes) link.sizes = tag.sizes;
       if (tag.type) link.type = tag.type;
-      link.href = tag.href;
+      link.href = withCacheBuster(tag.href, cacheBuster);
       document.head.appendChild(link);
     });
 
@@ -110,30 +122,18 @@ function Favicons() {
     });
   };
 
-  const injectLogoFallback = async () => {
-    try {
-      const response = await fetch(`${STORAGE_BASE_URL}/api/config`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch config');
-      }
-      const data = await response.json();
+  const injectLogoFallback = (config) => {
+    let faviconUrl = '/favicon.svg';
 
-      let faviconUrl = '/favicon.svg'; // Default fallback bundled with the app
-
-      if (data.data?.logos?.universal) {
-        // Prefer the thumbnail from the universal logo, then medium.
-        faviconUrl =
-          data.data.logos.universal.thumbnail ||
-          data.data.logos.universal.medium ||
-          data.data.logos.universal.url;
-
-        faviconUrl = toAbsoluteUrl(faviconUrl);
-      }
-
-      injectSingleFavicon(faviconUrl);
-    } catch {
-      injectDefaultFavicon();
+    if (config?.logos?.universal) {
+      faviconUrl =
+        config.logos.universal.thumbnail ||
+        config.logos.universal.medium ||
+        config.logos.universal.url ||
+        '/favicon.svg';
     }
+
+    injectSingleFavicon(faviconUrl);
   };
 
   const injectDefaultFavicon = () => {

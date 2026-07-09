@@ -35,6 +35,8 @@ VITE_STORAGE_BASE_URL=http://127.0.0.1:8000
 - `VITE_API_BASE_URL` — Laravel API base URL (must include `/api`).
 - `VITE_STORAGE_BASE_URL` — Laravel public/storage base URL, used for logos, avatars and favicons.
 
+Both values are consumed through `import.meta.env` at build time.
+
 ## 🔧 Development
 
 ```bash
@@ -82,17 +84,24 @@ Authenticated requests automatically include the bearer token stored in `localSt
 
 ## 📝 Features
 
-- [x] Login and registration (Sanctum + Firebase)
+- [x] Login and registration (Sanctum + Firebase), gated by backend `app.signup_enabled`
 - [x] Google, Apple, Facebook and GitHub social login (Firebase only)
 - [x] Dashboard with user profile welcome
 - [x] Self profile update and avatar upload
-- [x] User preferences (theme, font size, dense layout)
-- [x] Dark/Light mode
-- [x] Dynamic favicons and page titles from API config
+- [x] User preferences (theme, font size, dense layout) — saved to API and persisted locally
+- [x] Dark/Light mode with navbar toggle and auto-reload
+- [x] Dynamic favicons and page titles from API config, with cache busting when logos change
+- [x] Route-level code splitting with `React.lazy()` for Dashboard, Settings and Register
 
 ## 🚫 Out of scope
 
 This webapp does **not** include admin/super-admin user management. Those features belong to the Laravel Blade admin dashboard and use the `api_admin` guard.
+
+## 🔗 Related Projects
+
+- [AuthStart API](../../AuthStartAPI) — Laravel 13 backend
+- [AuthStart iOS](../../AuthStartIOS) — SwiftUI iOS client
+- [AuthStart macOS](../../AuthStartMacOS) — SwiftUI macOS client
 
 ## 👨‍💻 Author
 
