@@ -12,7 +12,7 @@ function AppContent() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Favicons />
-      <DocumentTitle suffix={loading ? 'Loading...' : 'AuthStart'} />
+      <DocumentTitle />
       <AppRoutes />
     </ThemeProvider>
   );

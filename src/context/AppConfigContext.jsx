@@ -230,7 +230,7 @@ export const AppConfigProvider = ({ children }) => {
   }, [getAuthProvider]);
 
   // Stable helper getters
-  const getTitle = useCallback(() => config?.['app.title'] || 'AuthWebApp', [config]);
+  const getTitle = useCallback(() => config?.['app.title'] || 'AuthStart', [config]);
   const getSubtitle = useCallback(() => config?.['app.subtitle'] || 'Authentication System', [config]);
   const getLanguage = useCallback(() => config?.['app.language'] || 'en', [config]);
   const getLogos = useCallback(() => config?.logos || {}, [config]);
