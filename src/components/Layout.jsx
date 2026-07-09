@@ -217,7 +217,7 @@ function Layout() {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            AuthStart
+            {/* Title removed - shown in sidebar */}
           </Typography>
           {canToggle && (
             <Tooltip title={currentMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
