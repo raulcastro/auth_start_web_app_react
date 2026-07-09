@@ -39,7 +39,15 @@ function Register() {
     config,
     updateAuthState,
     isFirebaseAuth,
+    isSignupEnabled,
   } = useAppConfig();
+
+  // Redirect back to login if signup becomes disabled while on this page.
+  useEffect(() => {
+    if (config && !isSignupEnabled()) {
+      navigate('/login', { replace: true });
+    }
+  }, [config, isSignupEnabled, navigate]);
 
   // Initialize Firebase when config is loaded and Firebase is the provider
   useEffect(() => {

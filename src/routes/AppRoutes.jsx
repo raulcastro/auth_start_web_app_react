@@ -6,6 +6,7 @@ import Settings from '../pages/Settings';
 import Layout from '../components/Layout';
 import ProtectedRoute from './ProtectedRoute';
 import GuestRoute from './GuestRoute';
+import SignupGuard from './SignupGuard';
 
 function AppRoutes() {
   return (
@@ -23,7 +24,9 @@ function AppRoutes() {
         path="/register"
         element={
           <GuestRoute>
-            <Register />
+            <SignupGuard>
+              <Register />
+            </SignupGuard>
           </GuestRoute>
         }
       />

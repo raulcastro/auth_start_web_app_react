@@ -80,6 +80,9 @@ function Login() {
     isFirebaseAuth,
   } = useAppConfig();
 
+  // Prevent showing the Sign Up link before config has loaded.
+  const signupEnabled = config ? isSignupEnabled() : false;
+
   // Initialize Firebase when config is loaded and Firebase is the provider
   useEffect(() => {
     const init = async () => {
@@ -432,7 +435,7 @@ function Login() {
               <Stack
                 direction="row"
                 spacing={2}
-                justifyContent={isSignupEnabled() ? 'space-between' : 'center'}
+                justifyContent={signupEnabled ? 'space-between' : 'center'}
                 alignItems="center"
                 sx={{ mt: 2 }}
               >
@@ -449,7 +452,7 @@ function Login() {
                   Forgot password?
                 </Link>
 
-                {isSignupEnabled() && (
+                {signupEnabled && (
                   <Link
                     component={RouterLink}
                     to="/register"

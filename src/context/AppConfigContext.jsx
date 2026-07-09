@@ -238,11 +238,10 @@ export const AppConfigProvider = ({ children }) => {
   const getThemeModeValue = useCallback(() => themeMode, [themeMode]);
   const getFontSizeValue = useCallback(() => fontSize, [fontSize]);
   const getDenseLayoutValue = useCallback(() => isDense, [isDense]);
-  const isSignupEnabled = useCallback(() =>
-    config?.['app.signup_enabled'] === true
-    || config?.['app.signup_enabled'] === '1'
-    || config?.['app.signup_enabled'] === 1,
-  [config]);
+  const isSignupEnabled = useCallback(() => {
+    const value = config?.['app.signup_enabled'];
+    return value === true || value === '1' || value === 1 || value === 'true';
+  }, [config]);
 
   const value = useMemo(() => ({
     config,
