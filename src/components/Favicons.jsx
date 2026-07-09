@@ -3,11 +3,11 @@ import { STORAGE_BASE_URL } from '../services/api';
 
 /**
  * Favicons Component
- * 
+ *
  * Dynamically injects favicon tags based on backend configuration.
  * If generated favicons exist in the backend, uses them.
- * Otherwise, falls back to the default favicon.
- * 
+ * Otherwise, falls back to the active universal logo or the default favicon.
+ *
  * Note: Uses image loading strategy instead of fetch to avoid CORS issues
  * with static files in storage.
  */
@@ -17,23 +17,20 @@ function Favicons() {
   useEffect(() => {
     const loadFavicons = async () => {
       try {
-        // Check if favicons exist by trying to load an image
-        // This avoids CORS issues since we're loading an image, not making an API call
-        const faviconExists = await checkFaviconExists();
-        
+        // Check if generated favicons exist by trying to load an image.
+        // This avoids CORS issues since we're loading an image, not making an API call.
+        const faviconExists = await checkGeneratedFaviconExists();
+
         if (faviconExists) {
-          // Generated favicons exist - inject all favicon tags
           injectGeneratedFavicons();
         } else {
-          // No generated favicons - use default or logo from API config
-          await injectDefaultFavicon();
+          await injectLogoFallback();
         }
       } catch (error) {
-        // Error - use default
         console.log('Favicon check failed, using default:', error);
-        await injectDefaultFavicon();
+        injectDefaultFavicon();
       }
-      
+
       setFaviconsLoaded(true);
     };
 
@@ -41,10 +38,10 @@ function Favicons() {
   }, []);
 
   /**
-   * Check if favicon exists by attempting to load it as an image
-   * This avoids CORS issues compared to fetch()
+   * Check if generated favicon exists by attempting to load it as an image.
+   * A cache buster is used only here to avoid stale 404 responses.
    */
-  const checkFaviconExists = () => {
+  const checkGeneratedFaviconExists = () => {
     return new Promise((resolve) => {
       const img = new Image();
       const timeout = setTimeout(() => {
@@ -61,14 +58,21 @@ function Favicons() {
         resolve(false);
       };
 
-      // Add cache buster to avoid cached 404s
       img.src = `${STORAGE_BASE_URL}/storage/favicons/favicon.ico?t=${Date.now()}`;
     });
   };
 
+  /**
+   * Build an absolute URL relative to the storage base URL.
+   */
+  const toAbsoluteUrl = (relativeUrl) => {
+    if (!relativeUrl) return null;
+    return relativeUrl.startsWith('http') ? relativeUrl : `${STORAGE_BASE_URL}${relativeUrl}`;
+  };
+
   const injectGeneratedFavicons = () => {
     const baseUrl = `${STORAGE_BASE_URL}/storage/favicons`;
-    
+
     const faviconTags = [
       { rel: 'apple-touch-icon', sizes: '180x180', href: `${baseUrl}/apple-touch-icon.png` },
       { rel: 'icon', type: 'image/png', sizes: '512x512', href: `${baseUrl}/android-chrome-512x512.png` },
@@ -79,11 +83,9 @@ function Favicons() {
       { rel: 'manifest', href: `${STORAGE_BASE_URL}/favicon-manifest` },
     ];
 
-    // Remove existing favicon tags
     removeExistingFavicons();
 
-    // Inject new favicon tags
-    faviconTags.forEach(tag => {
+    faviconTags.forEach((tag) => {
       const link = document.createElement('link');
       link.rel = tag.rel;
       if (tag.sizes) link.sizes = tag.sizes;
@@ -92,17 +94,15 @@ function Favicons() {
       document.head.appendChild(link);
     });
 
-    // Add meta tags
     const metaTags = [
       { name: 'msapplication-TileColor', content: '#ffffff' },
       { name: 'theme-color', content: '#ffffff' },
     ];
 
-    metaTags.forEach(tag => {
-      // Remove existing meta tag if exists
+    metaTags.forEach((tag) => {
       const existing = document.querySelector(`meta[name="${tag.name}"]`);
       if (existing) existing.remove();
-      
+
       const meta = document.createElement('meta');
       meta.name = tag.name;
       meta.content = tag.content;
@@ -110,48 +110,56 @@ function Favicons() {
     });
   };
 
-  const injectDefaultFavicon = async () => {
+  const injectLogoFallback = async () => {
     try {
-      // Try to get logo from API config
       const response = await fetch(`${STORAGE_BASE_URL}/api/config`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch config');
+      }
       const data = await response.json();
-      
-      let faviconUrl = '/favicon.svg'; // Default fallback
-      
-      if (data.data && data.data.logos && data.data.logos.universal) {
-        // Use the thumbnail from the universal logo
-        faviconUrl = data.data.logos.universal.thumbnail || data.data.logos.universal.medium;
-        // Make absolute URL if relative
-        if (faviconUrl.startsWith('/')) {
-          faviconUrl = `${STORAGE_BASE_URL}${faviconUrl}`;
-        }
+
+      let faviconUrl = '/favicon.svg'; // Default fallback bundled with the app
+
+      if (data.data?.logos?.universal) {
+        // Prefer the thumbnail from the universal logo, then medium.
+        faviconUrl =
+          data.data.logos.universal.thumbnail ||
+          data.data.logos.universal.medium ||
+          data.data.logos.universal.url;
+
+        faviconUrl = toAbsoluteUrl(faviconUrl);
       }
 
-      // Remove existing favicon tags
-      removeExistingFavicons();
-
-      // Inject default favicon
-      const link = document.createElement('link');
-      link.rel = 'icon';
-      link.type = 'image/png';
-      link.href = faviconUrl;
-      document.head.appendChild(link);
-
-      // Also add shortcut icon
-      const shortcut = document.createElement('link');
-      shortcut.rel = 'shortcut icon';
-      shortcut.href = faviconUrl;
-      document.head.appendChild(shortcut);
+      injectSingleFavicon(faviconUrl);
     } catch {
-      // Keep default favicon.svg if everything fails
-      console.log('Using default favicon');
+      injectDefaultFavicon();
     }
   };
 
+  const injectDefaultFavicon = () => {
+    injectSingleFavicon('/favicon.svg');
+  };
+
+  const injectSingleFavicon = (faviconUrl) => {
+    removeExistingFavicons();
+
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = faviconUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+    link.href = faviconUrl;
+    document.head.appendChild(link);
+
+    const shortcut = document.createElement('link');
+    shortcut.rel = 'shortcut icon';
+    shortcut.href = faviconUrl;
+    document.head.appendChild(shortcut);
+  };
+
   const removeExistingFavicons = () => {
-    // Remove all existing favicon and apple-touch-icon links
-    const existingLinks = document.querySelectorAll('link[rel*="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]');
-    existingLinks.forEach(link => link.remove());
+    const existingLinks = document.querySelectorAll(
+      'link[rel*="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]'
+    );
+    existingLinks.forEach((link) => link.remove());
   };
 
   // This component doesn't render anything visible
