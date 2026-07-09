@@ -14,6 +14,7 @@ import {
   CircularProgress,
   Alert,
   Divider,
+  useTheme,
 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -80,8 +81,14 @@ function Login() {
     isFirebaseAuth,
   } = useAppConfig();
 
+  const theme = useTheme();
+  const baseFontSize = theme.typography.fontSize;
+  const spacing = theme.spacing;
+
+  // Prevent showing the Sign Up link before config has loaded.
   const signupEnabled = config ? isSignupEnabled() : false;
 
+  // Initialize Firebase when config is loaded and Firebase is the provider
   useEffect(() => {
     const init = async () => {
       if (isFirebaseAuth() && config && !firebaseInitialized) {
@@ -182,6 +189,7 @@ function Login() {
 
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
 
+  // Build gradient with 3 colors
   const start = webAppConfig?.['theme.login_gradient_start']?.value || '#4f46e5';
   const middle = webAppConfig?.['theme.login_gradient_middle']?.value || '#7c3aed';
   const end = webAppConfig?.['theme.login_gradient_end']?.value || '#c026d3';
@@ -190,6 +198,7 @@ function Login() {
 
   const isDark = getThemeMode() === 'dark';
 
+  // Check which auth methods are enabled
   const emailEnabled = isAuthMethodEnabled('email');
   const googleEnabled = isAuthMethodEnabled('google');
   const appleEnabled = isAuthMethodEnabled('apple');
@@ -199,6 +208,9 @@ function Login() {
   const socialEnabled = googleEnabled || appleEnabled || facebookEnabled || githubEnabled;
   const showDivider = emailEnabled && socialEnabled;
   const showFirebaseLoading = isFirebaseAuth() && !firebaseInitialized && !configLoading;
+
+  // Scale factors based on font size
+  const scale = baseFontSize / 16; // 16px is default
 
   return (
     <Box
@@ -217,7 +229,7 @@ function Login() {
         right: 0,
         bottom: 0,
         overflow: 'auto',
-        p: { xs: 2, sm: 4 },
+        p: spacing(2),
       }}
     >
       <CssBaseline />
@@ -229,9 +241,9 @@ function Login() {
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
           width: '100%',
-          maxWidth: { xs: 420, md: 900 },
-          minHeight: { xs: 'auto', md: 480 },
-          borderRadius: 4,
+          maxWidth: { xs: 420 * scale, md: 900 * scale },
+          minHeight: { xs: 'auto', md: 480 * scale },
+          borderRadius: 4 * scale,
           overflow: 'hidden',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
           bgcolor: 'transparent',
@@ -245,13 +257,13 @@ function Login() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            p: { xs: 3, md: 4 },
+            p: spacing(3),
             background: isDark
               ? 'linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%)'
               : gradient,
             color: 'white',
             textAlign: 'center',
-            minHeight: { xs: 240, md: 'auto' },
+            minHeight: { xs: 240 * scale, md: 'auto' },
             position: 'relative',
             '&::before': {
               content: '""',
@@ -259,8 +271,8 @@ function Login() {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: { xs: 280, md: 400 },
-              height: { xs: 280, md: 400 },
+              width: 280 * scale,
+              height: 280 * scale,
               background: 'radial-gradient(circle, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0) 70%)',
               borderRadius: '50%',
               pointerEvents: 'none',
@@ -271,34 +283,34 @@ function Login() {
           <Box
             sx={{
               position: 'relative',
-              mb: 3,
+              mb: spacing(3),
               '&::before': {
                 content: '""',
                 position: 'absolute',
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                width: { xs: 180, md: 260 },
-                height: { xs: 180, md: 260 },
+                width: 180 * scale,
+                height: 180 * scale,
                 background: 'radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0) 65%)',
                 borderRadius: '50%',
-                filter: 'blur(15px)',
+                filter: 'blur(20px)',
                 pointerEvents: 'none',
               },
             }}
           >
             {configLoading || showFirebaseLoading ? (
-              <CircularProgress sx={{ mb: 3 }} color="inherit" />
+              <CircularProgress sx={{ mb: spacing(3) }} color="inherit" />
             ) : logoUrl ? (
               <Avatar
                 src={logoUrl}
                 alt={getTitle()}
                 sx={{
-                  width: { xs: 125, md: 170 },
-                  height: { xs: 125, md: 170 },
+                  width: 125 * scale,
+                  height: 125 * scale,
                   bgcolor: 'transparent',
                   boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3)',
-                  border: '3px solid rgba(255,255,255,0.3)',
+                  border: `${3 * scale}px solid rgba(255,255,255,0.3)`,
                   position: 'relative',
                   zIndex: 1,
                 }}
@@ -306,16 +318,16 @@ function Login() {
             ) : (
               <Avatar
                 sx={{
-                  width: { xs: 125, md: 170 },
-                  height: { xs: 125, md: 170 },
+                  width: 125 * scale,
+                  height: 125 * scale,
                   bgcolor: 'rgba(255,255,255,0.15)',
                   boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 40px rgba(255,255,255,0.3)',
-                  border: '3px solid rgba(255,255,255,0.3)',
+                  border: `${3 * scale}px solid rgba(255,255,255,0.3)`,
                   position: 'relative',
                   zIndex: 1,
                 }}
               >
-                <LockOutlinedIcon sx={{ fontSize: { xs: 65, md: 90 } }} />
+                <LockOutlinedIcon sx={{ fontSize: 65 * scale }} />
               </Avatar>
             )}
           </Box>
@@ -324,8 +336,8 @@ function Login() {
             variant="h2"
             sx={{
               fontWeight: 800,
-              fontSize: { xs: '2.5rem', md: '3.5rem' },
-              mb: 2,
+              fontSize: `${2.5 * scale}rem`,
+              mb: spacing(2),
               textShadow: '0 4px 20px rgba(0,0,0,0.4)',
               letterSpacing: '-0.02em',
               position: 'relative',
@@ -338,9 +350,9 @@ function Login() {
           <Typography
             variant="h6"
             sx={{
-              fontSize: { xs: '1.1rem', md: '1.3rem' },
+              fontSize: `${1.1 * scale}rem`,
               opacity: 0.95,
-              maxWidth: 340,
+              maxWidth: 340 * scale,
               lineHeight: 1.5,
               fontWeight: 400,
               position: 'relative',
@@ -358,17 +370,17 @@ function Login() {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            p: { xs: 3, md: 4 },
+            p: spacing(3),
             bgcolor: 'background.paper',
           }}
         >
-          {/* LOG IN Title - Smaller */}
+          {/* LOG IN Title */}
           <Typography
             variant="h2"
             sx={{
               fontWeight: 800,
-              fontSize: { xs: '2.2rem', md: '2.8rem' },
-              mb: 0.5,
+              fontSize: `${2.2 * scale}rem`,
+              mb: spacing(0.5),
               textAlign: 'center',
               background: isDark
                 ? 'linear-gradient(135deg, #fff 0%, #ccc 100%)'
@@ -386,23 +398,23 @@ function Login() {
             variant="body2"
             color="text.secondary"
             sx={{
-              mb: 3,
+              mb: spacing(3),
               textAlign: 'center',
-              fontSize: '0.9rem',
+              fontSize: `${0.9 * scale}rem`,
             }}
           >
             Welcome back! Please enter your details.
           </Typography>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
+            <Alert severity="error" sx={{ mb: spacing(3), borderRadius: 2 * scale }}>
               {error}
             </Alert>
           )}
 
           {/* Social Login */}
           {isFirebaseAuth() && socialEnabled && (
-            <Stack spacing={2} sx={{ mb: 3 }}>
+            <Stack spacing={2 * scale} sx={{ mb: spacing(3) }}>
               {googleEnabled && (
                 <Button
                   fullWidth
@@ -413,9 +425,10 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
-                    py: 1.4,
+                    py: 1.4 * scale,
                     borderColor: 'divider',
-                    borderRadius: 2,
+                    borderRadius: 2 * scale,
+                    fontSize: `${scale}rem`,
                   }}
                 >
                   Continue with Google
@@ -432,9 +445,10 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
-                    py: 1.4,
+                    py: 1.4 * scale,
                     borderColor: 'divider',
-                    borderRadius: 2,
+                    borderRadius: 2 * scale,
+                    fontSize: `${scale}rem`,
                   }}
                 >
                   Continue with Apple
@@ -451,9 +465,10 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
-                    py: 1.4,
+                    py: 1.4 * scale,
                     borderColor: 'divider',
-                    borderRadius: 2,
+                    borderRadius: 2 * scale,
+                    fontSize: `${scale}rem`,
                   }}
                 >
                   Continue with Facebook
@@ -470,9 +485,10 @@ function Login() {
                   disabled={loading || !firebaseInitialized}
                   sx={{
                     textTransform: 'none',
-                    py: 1.4,
+                    py: 1.4 * scale,
                     borderColor: 'divider',
-                    borderRadius: 2,
+                    borderRadius: 2 * scale,
+                    fontSize: `${scale}rem`,
                   }}
                 >
                   Continue with GitHub
@@ -482,8 +498,8 @@ function Login() {
           )}
 
           {showDivider && (
-            <Divider sx={{ mb: 3 }}>
-              <Typography variant="body2" color="text.secondary">
+            <Divider sx={{ mb: spacing(3) }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: `${scale}rem` }}>
                 or
               </Typography>
             </Divider>
@@ -507,9 +523,13 @@ function Login() {
                 error={!!fieldErrors.email}
                 helperText={fieldErrors.email?.[0] || ''}
                 sx={{ 
-                  mb: 2.5,
+                  mb: spacing(2),
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 2 * scale,
+                    fontSize: `${scale}rem`,
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: `${scale}rem`,
                   },
                 }}
               />
@@ -529,9 +549,13 @@ function Login() {
                 error={!!fieldErrors.password}
                 helperText={fieldErrors.password?.[0] || ''}
                 sx={{ 
-                  mb: 2.5,
+                  mb: spacing(2),
                   '& .MuiOutlinedInput-root': {
-                    borderRadius: 2,
+                    borderRadius: 2 * scale,
+                    fontSize: `${scale}rem`,
+                  },
+                  '& .MuiInputLabel-root': {
+                    fontSize: `${scale}rem`,
                   },
                 }}
               />
@@ -541,7 +565,7 @@ function Login() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  mb: 3,
+                  mb: spacing(3),
                 }}
               >
                 <FormControlLabel
@@ -550,9 +574,19 @@ function Login() {
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                       color="primary"
+                      sx={{ 
+                        '& .MuiSvgIcon-root': { 
+                          fontSize: 24 * scale 
+                        } 
+                      }}
                     />
                   }
                   label="Remember me"
+                  sx={{
+                    '& .MuiTypography-root': {
+                      fontSize: `${scale}rem`,
+                    },
+                  }}
                 />
 
                 <Link
@@ -560,7 +594,7 @@ function Login() {
                   to="/password-reset"
                   variant="body2"
                   underline="hover"
-                  sx={{ fontWeight: 500 }}
+                  sx={{ fontWeight: 500, fontSize: `${scale}rem` }}
                 >
                   Forgot password?
                 </Link>
@@ -573,27 +607,27 @@ function Login() {
                 size="large"
                 disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
                 sx={{
-                  py: 1.6,
-                  mb: 3,
-                  fontSize: '1.15rem',
+                  py: 1.6 * scale,
+                  mb: spacing(3),
+                  fontSize: `${1.1 * scale}rem`,
                   fontWeight: 700,
-                  borderRadius: 2.5,
+                  borderRadius: 2.5 * scale,
                   textTransform: 'none',
                   boxShadow: '0 6px 20px rgba(0,0,0,0.25)',
                 }}
               >
-                {loading ? <CircularProgress size={26} /> : 'Log In'}
+                {loading ? <CircularProgress size={26 * scale} /> : 'Log In'}
               </Button>
 
               {signupEnabled && (
                 <Box sx={{ textAlign: 'center' }}>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: `${scale}rem` }}>
                     Don't have an account?{' '}
                     <Link
                       component={RouterLink}
                       to="/register"
                       underline="hover"
-                      sx={{ fontWeight: 600 }}
+                      sx={{ fontWeight: 600, fontSize: `${scale}rem` }}
                     >
                       Sign up
                     </Link>
@@ -607,8 +641,9 @@ function Login() {
           <Alert
             severity="info"
             sx={{
-              mt: 3,
-              borderRadius: 2,
+              mt: spacing(3),
+              borderRadius: 2 * scale,
+              fontSize: `${scale}rem`,
               '& .MuiAlert-message': {
                 width: '100%',
                 textAlign: 'center',
