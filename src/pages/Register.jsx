@@ -13,11 +13,12 @@ import {
   Alert,
 } from '@mui/material';
 import { PersonAdd as PersonAddIcon } from '@mui/icons-material';
-import { useAppConfig } from '../context/AppConfigContext';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import useAppConfig from '../context/useAppConfig';
 import { registerUser } from '../services/api';
 import { initFirebase, firebaseRegisterWithEmail } from '../services/firebase';
 
-function Register({ onSwitchToLogin, onRegisterSuccess }) {
+function Register() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -27,12 +28,14 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [success, setSuccess] = useState('');
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
 
-  const { 
-    getThemeMode, 
-    webAppConfig, 
+  const navigate = useNavigate();
+  const {
+    getThemeMode,
+    webAppConfig,
     config,
     updateAuthState,
     isFirebaseAuth,
@@ -64,9 +67,11 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     setSuccess('');
 
     if (formData.password !== formData.confirmPassword) {
+      setFieldErrors({ confirmPassword: ['Passwords do not match'] });
       setError('Passwords do not match!');
       return;
     }
@@ -76,16 +81,15 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
     try {
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
       let response;
-      
+
       if (isFirebaseAuth()) {
-        // Use Firebase Auth
         response = await firebaseRegisterWithEmail(
-          formData.email, 
-          formData.password, 
-          fullName
+          formData.email,
+          formData.password,
+          fullName,
+          config,
         );
       } else {
-        // Use Sanctum/Laravel Auth
         const userData = {
           name: fullName,
           email: formData.email,
@@ -99,15 +103,19 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
         setSuccess('Registration successful! Redirecting...');
         updateAuthState(response.data.user, response.data.token);
         setTimeout(() => {
-          if (onRegisterSuccess) {
-            onRegisterSuccess(response.data);
-          }
+          navigate('/dashboard');
         }, 1500);
       } else {
         setError(response.message || 'Registration failed');
+        if (response.errors) {
+          setFieldErrors(response.errors);
+        }
       }
     } catch (err) {
       setError(err.message || 'An error occurred during registration');
+      if (err.errors) {
+        setFieldErrors(err.errors);
+      }
     } finally {
       setLoading(false);
     }
@@ -192,6 +200,8 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   value={formData.firstName}
                   onChange={handleChange}
                   disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
+                  error={!!fieldErrors.name}
+                  helperText={fieldErrors.name?.[0] || ''}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -218,6 +228,8 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   value={formData.email}
                   onChange={handleChange}
                   disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
+                  error={!!fieldErrors.email}
+                  helperText={fieldErrors.email?.[0] || ''}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -232,6 +244,8 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   value={formData.password}
                   onChange={handleChange}
                   disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
+                  error={!!fieldErrors.password}
+                  helperText={fieldErrors.password?.[0] || ''}
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
@@ -245,6 +259,8 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
+                  error={!!fieldErrors.confirmPassword}
+                  helperText={fieldErrors.confirmPassword?.[0] || ''}
                 />
               </Grid>
             </Grid>
@@ -262,19 +278,16 @@ function Register({ onSwitchToLogin, onRegisterSuccess }) {
             <Grid container justifyContent="flex-end">
               <Grid>
                 <Link
-                  href="#"
+                  component={RouterLink}
+                  to="/login"
                   variant="body2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onSwitchToLogin();
-                  }}
                 >
                   Already have an account? Sign in
                 </Link>
               </Grid>
             </Grid>
           </Box>
-          
+
           {/* Provider Badge */}
           {isFirebaseAuth() ? (
             <Alert severity="info" sx={{ mt: 2, width: '100%' }}>

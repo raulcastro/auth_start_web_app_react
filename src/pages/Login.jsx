@@ -16,9 +16,17 @@ import {
   Divider,
 } from '@mui/material';
 import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
-import { useAppConfig } from '../context/AppConfigContext';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import useAppConfig from '../context/useAppConfig';
 import { loginUser } from '../services/api';
-import { initFirebase, firebaseLoginWithEmail, firebaseLoginWithGoogle, firebaseLoginWithApple, firebaseLoginWithFacebook, firebaseLoginWithGitHub } from '../services/firebase';
+import {
+  initFirebase,
+  firebaseLoginWithEmail,
+  firebaseLoginWithGoogle,
+  firebaseLoginWithApple,
+  firebaseLoginWithFacebook,
+  firebaseLoginWithGitHub,
+} from '../services/firebase';
 
 // Social login icons (using SVG for now, can be replaced with actual icons)
 const GoogleIcon = () => (
@@ -48,19 +56,21 @@ const GitHubIcon = () => (
   </svg>
 );
 
-function Login({ onSwitchToRegister, onLoginSuccess }) {
+function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [firebaseInitialized, setFirebaseInitialized] = useState(false);
-  
-  const { 
-    getTitle, 
-    getSubtitle, 
-    getLogo, 
-    configLoading, 
+
+  const navigate = useNavigate();
+  const {
+    getTitle,
+    getSubtitle,
+    getLogo,
+    loading: configLoading,
     webAppConfig,
     config,
     getThemeMode,
@@ -89,29 +99,32 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     setLoading(true);
 
     try {
       let response;
-      
+
       if (isFirebaseAuth()) {
-        // Use Firebase Auth
-        response = await firebaseLoginWithEmail(email, password);
+        response = await firebaseLoginWithEmail(email, password, config);
       } else {
-        // Use Sanctum/Laravel Auth
         response = await loginUser({ email, password });
       }
-      
+
       if (response.success && response.data) {
         updateAuthState(response.data.user, response.data.token);
-        if (onLoginSuccess) {
-          onLoginSuccess(response.data);
-        }
+        navigate('/dashboard');
       } else {
         setError(response.message || 'Login failed');
+        if (response.errors) {
+          setFieldErrors(response.errors);
+        }
       }
     } catch (err) {
       setError(err.message || 'An error occurred during login');
+      if (err.errors) {
+        setFieldErrors(err.errors);
+      }
     } finally {
       setLoading(false);
     }
@@ -124,52 +137,57 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
     }
 
     setError('');
+    setFieldErrors({});
     setLoading(true);
 
     try {
       let response;
-      
+
       switch (provider) {
         case 'Google':
-          response = await firebaseLoginWithGoogle();
+          response = await firebaseLoginWithGoogle(config);
           break;
         case 'Apple':
-          response = await firebaseLoginWithApple();
+          response = await firebaseLoginWithApple(config);
           break;
         case 'Facebook':
-          response = await firebaseLoginWithFacebook();
+          response = await firebaseLoginWithFacebook(config);
           break;
         case 'GitHub':
-          response = await firebaseLoginWithGitHub();
+          response = await firebaseLoginWithGitHub(config);
           break;
         default:
           throw new Error(`Unknown provider: ${provider}`);
       }
-      
+
       if (response.success && response.data) {
         updateAuthState(response.data.user, response.data.token);
-        if (onLoginSuccess) {
-          onLoginSuccess(response.data);
-        }
+        navigate('/dashboard');
       } else {
         setError(response.message || `${provider} login failed`);
+        if (response.errors) {
+          setFieldErrors(response.errors);
+        }
       }
     } catch (err) {
       setError(err.message || `Failed to login with ${provider}`);
+      if (err.errors) {
+        setFieldErrors(err.errors);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const logoUrl = getLogo('universal') || getLogo('light') || getLogo('dark');
-  
+
   // Build gradient with 3 colors
   const start = webAppConfig?.['theme.login_gradient_start']?.value || '#4f46e5';
   const middle = webAppConfig?.['theme.login_gradient_middle']?.value || '#7c3aed';
   const end = webAppConfig?.['theme.login_gradient_end']?.value || '#c026d3';
   const angle = webAppConfig?.['theme.login_gradient_angle']?.value || '135';
   const gradient = `linear-gradient(${angle}deg, ${start} 0%, ${middle} 50%, ${end} 100%)`;
-  
+
   const isDark = getThemeMode() === 'dark';
 
   // Check which auth methods are enabled
@@ -178,7 +196,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
   const appleEnabled = isAuthMethodEnabled('apple');
   const facebookEnabled = isAuthMethodEnabled('facebook');
   const githubEnabled = isAuthMethodEnabled('github');
-  
+
   const socialEnabled = googleEnabled || appleEnabled || facebookEnabled || githubEnabled;
   const showDivider = emailEnabled && socialEnabled;
 
@@ -193,7 +211,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: isDark 
+        background: isDark
           ? 'linear-gradient(135deg, #1e1e1e 0%, #121212 100%)'
           : gradient,
         position: 'fixed',
@@ -241,21 +259,21 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
               <LockOutlinedIcon sx={{ fontSize: 80 }} />
             </Avatar>
           )}
-          
+
           <Typography component="h1" variant="h5" fontWeight={500}>
             {configLoading || showFirebaseLoading ? 'Loading...' : getTitle()}
           </Typography>
-          
+
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             {configLoading || showFirebaseLoading ? '' : getSubtitle()}
           </Typography>
-          
+
           {error && (
             <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
               {error}
             </Alert>
           )}
-          
+
           {/* Social Login Buttons - Only for Firebase */}
           {isFirebaseAuth() && socialEnabled && (
             <Stack spacing={1.5} sx={{ mt: 3, width: '100%' }}>
@@ -267,18 +285,18 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   startIcon={<GoogleIcon />}
                   onClick={() => handleSocialLogin('Google')}
                   disabled={loading || !firebaseInitialized}
-                  sx={{ 
+                  sx={{
                     textTransform: 'none',
                     borderColor: 'divider',
                     '&:hover': {
                       borderColor: 'text.primary',
-                    }
+                    },
                   }}
                 >
                   Continue with Google
                 </Button>
               )}
-              
+
               {appleEnabled && (
                 <Button
                   fullWidth
@@ -287,18 +305,18 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   startIcon={<AppleIcon />}
                   onClick={() => handleSocialLogin('Apple')}
                   disabled={loading || !firebaseInitialized}
-                  sx={{ 
+                  sx={{
                     textTransform: 'none',
                     borderColor: 'divider',
                     '&:hover': {
                       borderColor: 'text.primary',
-                    }
+                    },
                   }}
                 >
                   Continue with Apple
                 </Button>
               )}
-              
+
               {facebookEnabled && (
                 <Button
                   fullWidth
@@ -307,18 +325,18 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   startIcon={<FacebookIcon />}
                   onClick={() => handleSocialLogin('Facebook')}
                   disabled={loading || !firebaseInitialized}
-                  sx={{ 
+                  sx={{
                     textTransform: 'none',
                     borderColor: 'divider',
                     '&:hover': {
                       borderColor: 'text.primary',
-                    }
+                    },
                   }}
                 >
                   Continue with Facebook
                 </Button>
               )}
-              
+
               {githubEnabled && (
                 <Button
                   fullWidth
@@ -327,12 +345,12 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                   startIcon={<GitHubIcon />}
                   onClick={() => handleSocialLogin('GitHub')}
                   disabled={loading || !firebaseInitialized}
-                  sx={{ 
+                  sx={{
                     textTransform: 'none',
                     borderColor: 'divider',
                     '&:hover': {
                       borderColor: 'text.primary',
-                    }
+                    },
                   }}
                 >
                   Continue with GitHub
@@ -340,7 +358,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
               )}
             </Stack>
           )}
-          
+
           {/* Divider */}
           {showDivider && (
             <Box sx={{ width: '100%', mt: 3, mb: 2 }}>
@@ -351,7 +369,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
               </Divider>
             </Box>
           )}
-          
+
           {/* Email/Password Form */}
           {emailEnabled && (
             <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
@@ -367,8 +385,10 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
+                error={!!fieldErrors.email}
+                helperText={fieldErrors.email?.[0] || ''}
               />
-              
+
               <TextField
                 margin="normal"
                 required
@@ -381,8 +401,10 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading || (isFirebaseAuth() && !firebaseInitialized)}
+                error={!!fieldErrors.password}
+                helperText={fieldErrors.password?.[0] || ''}
               />
-              
+
               <FormControlLabel
                 control={
                   <Checkbox
@@ -395,7 +417,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
                 }
                 label="Remember me"
               />
-              
+
               <Button
                 type="submit"
                 fullWidth
@@ -406,36 +428,34 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
               >
                 {loading ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
-              
-              <Stack 
-                direction="row" 
-                spacing={2} 
-                justifyContent={isSignupEnabled() ? "space-between" : "center"}
+
+              <Stack
+                direction="row"
+                spacing={2}
+                justifyContent={isSignupEnabled() ? 'space-between' : 'center'}
                 alignItems="center"
                 sx={{ mt: 2 }}
               >
-                <Link 
-                  href="#" 
+                <Link
+                  component={RouterLink}
+                  to="/password-reset"
                   variant="body2"
                   underline="hover"
-                  sx={{ 
+                  sx={{
                     fontWeight: 500,
                     whiteSpace: 'nowrap',
                   }}
                 >
                   Forgot password?
                 </Link>
-                
+
                 {isSignupEnabled() && (
                   <Link
-                    href="#"
+                    component={RouterLink}
+                    to="/register"
                     variant="body2"
                     underline="hover"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onSwitchToRegister();
-                    }}
-                    sx={{ 
+                    sx={{
                       fontWeight: 500,
                       whiteSpace: 'nowrap',
                     }}
@@ -446,7 +466,7 @@ function Login({ onSwitchToRegister, onLoginSuccess }) {
               </Stack>
             </Box>
           )}
-          
+
           {/* Provider Badge */}
           {isFirebaseAuth() ? (
             <Alert severity="info" sx={{ mt: 2, width: '100%' }}>

@@ -1,25 +1,39 @@
-export const API_BASE_URL = 'http://127.0.0.1:8000/api';
-export const STORAGE_BASE_URL = 'http://127.0.0.1:8000';
+import apiClient from './apiClient';
 
-const API_URL = API_BASE_URL;
-const STORAGE_URL = STORAGE_BASE_URL;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+export const STORAGE_BASE_URL = import.meta.env.VITE_STORAGE_BASE_URL || 'http://127.0.0.1:8000';
+
+/**
+ * Standardize a backend error into a plain Error with a useful message.
+ */
+const normalizeError = (error, fallback = 'Request failed') => {
+  const message = error.response?.data?.message
+    || error.message
+    || fallback;
+
+  const err = new Error(message);
+  err.status = error.response?.status;
+  err.errors = error.response?.data?.errors || null;
+  err.code = error.response?.data?.error_code || null;
+  return err;
+};
 
 /**
  * Fetch public app configuration from API
  */
 export const fetchAppConfig = async () => {
   try {
-    const response = await fetch(`${API_URL}/config`);
+    const response = await fetch(`${API_BASE_URL}/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch config');
     }
     const data = await response.json();
-    
+
     // Process logos to ensure full URLs
     if (data.data && data.data.logos) {
       data.data.logos = processLogos(data.data.logos);
     }
-    
+
     return data.data;
   } catch (error) {
     console.error('Error fetching app config:', error);
@@ -39,7 +53,7 @@ export const fetchAppConfig = async () => {
  */
 export const fetchWebAppConfig = async () => {
   try {
-    const response = await fetch(`${API_URL}/web-config`);
+    const response = await fetch(`${API_BASE_URL}/web-config`);
     if (!response.ok) {
       throw new Error('Failed to fetch web app config');
     }
@@ -56,7 +70,7 @@ export const fetchWebAppConfig = async () => {
  */
 export const fetchLogos = async () => {
   try {
-    const response = await fetch(`${API_URL}/logos`);
+    const response = await fetch(`${API_BASE_URL}/logos`);
     if (!response.ok) {
       throw new Error('Failed to fetch logos');
     }
@@ -73,23 +87,23 @@ export const fetchLogos = async () => {
  */
 const processLogos = (logos) => {
   if (!logos) return {};
-  
+
   const processedLogos = {};
-  
+
   for (const [type, logo] of Object.entries(logos)) {
     if (logo && logo.url) {
       // If URL is relative, prepend the storage base URL
-      const fullUrl = logo.url.startsWith('http') 
-        ? logo.url 
-        : `${STORAGE_URL}${logo.url}`;
-      
+      const fullUrl = logo.url.startsWith('http')
+        ? logo.url
+        : `${STORAGE_BASE_URL}${logo.url}`;
+
       processedLogos[type] = {
         ...logo,
         url: fullUrl,
       };
     }
   }
-  
+
   return processedLogos;
 };
 
@@ -98,7 +112,7 @@ const processLogos = (logos) => {
  */
 export const registerUser = async (userData) => {
   try {
-    const response = await fetch(`${API_URL}/register`, {
+    const response = await fetch(`${API_BASE_URL}/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,9 +122,19 @@ export const registerUser = async (userData) => {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
-      throw new Error(data.message || 'Registration failed');
+      throw Object.assign(new Error(data.message || 'Registration failed'), {
+        status: response.status,
+        errors: data.errors || null,
+        code: data.error_code || null,
+      });
+    }
+
+    // Persist token locally for consistency with login
+    if (data.data && data.data.token) {
+      localStorage.setItem('auth_token', data.data.token);
+      localStorage.setItem('user', JSON.stringify(data.data.user));
     }
 
     return data;
@@ -125,7 +149,7 @@ export const registerUser = async (userData) => {
  */
 export const loginUser = async (credentials) => {
   try {
-    const response = await fetch(`${API_URL}/login`, {
+    const response = await fetch(`${API_BASE_URL}/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -135,9 +159,13 @@ export const loginUser = async (credentials) => {
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+      throw Object.assign(new Error(data.message || 'Login failed'), {
+        status: response.status,
+        errors: data.errors || null,
+        code: data.error_code || null,
+      });
     }
 
     // Store token
@@ -158,22 +186,13 @@ export const loginUser = async (credentials) => {
  */
 export const logoutUser = async () => {
   try {
-    const token = localStorage.getItem('auth_token');
-    
-    if (token) {
-      await fetch(`${API_URL}/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json',
-        },
-      });
-    }
+    await apiClient.post('/logout');
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('user_preferences');
   }
 };
 
@@ -200,28 +219,56 @@ export const isAuthenticated = () => {
 };
 
 /**
+ * Fetch authenticated user profile from API
+ */
+export const fetchProfile = async () => {
+  try {
+    const response = await apiClient.get('/me');
+    return response.data.data;
+  } catch (error) {
+    throw normalizeError(error, 'Failed to fetch profile');
+  }
+};
+
+/**
+ * Update authenticated user profile
+ */
+export const updateProfile = async (profileData) => {
+  try {
+    const response = await apiClient.put('/me', profileData);
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error, 'Failed to update profile');
+  }
+};
+
+/**
+ * Upload or replace the authenticated user's avatar
+ */
+export const uploadAvatar = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const response = await apiClient.post('/me/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    throw normalizeError(error, 'Failed to upload avatar');
+  }
+};
+
+/**
  * Fetch user preferences from API
  */
 export const fetchUserPreferences = async () => {
   try {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch(`${API_URL}/user/preferences`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch user preferences');
-    }
-
-    const data = await response.json();
-    return data.data;
+    const response = await apiClient.get('/user/preferences');
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching user preferences:', error);
     return {};
@@ -229,42 +276,15 @@ export const fetchUserPreferences = async () => {
 };
 
 /**
- * Update user preferences
+ * Update user preferences.
+ * Returns the full preference objects (value, type, label, etc.).
  */
 export const updateUserPreferences = async (preferences) => {
   try {
-    const token = localStorage.getItem('auth_token');
-    if (!token) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await fetch(`${API_URL}/user/preferences`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(preferences),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to update preferences');
-    }
-
-    // Save to localStorage for fast retrieval on next load
-    const savedPrefs = JSON.parse(localStorage.getItem('user_preferences') || '{}');
-    Object.keys(preferences).forEach(key => {
-      savedPrefs[key] = { value: preferences[key] };
-    });
-    localStorage.setItem('user_preferences', JSON.stringify(savedPrefs));
-
-    return data;
+    const response = await apiClient.put('/user/preferences', preferences);
+    return response.data;
   } catch (error) {
-    console.error('Error updating user preferences:', error);
-    throw error;
+    throw normalizeError(error, 'Failed to update preferences');
   }
 };
 

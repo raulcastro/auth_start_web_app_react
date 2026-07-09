@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box,
   Drawer,
@@ -18,33 +18,41 @@ import {
   MenuItem,
   useTheme,
   Tooltip,
+  CircularProgress,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
-  People as PeopleIcon,
   Settings as SettingsIcon,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
   Logout as LogoutIcon,
+  AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
-import { useAppConfig } from '../context/AppConfigContext';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import useAppConfig from '../context/useAppConfig';
+import { logoutUser, uploadAvatar } from '../services/api';
 
 const drawerWidth = 240;
 
-function Layout({ children, onLogout, onNavigate, currentPage }) {
+function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isTogglingTheme, setIsTogglingTheme] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const fileInputRef = useRef(null);
   const theme = useTheme();
-  const { 
-    getTitle, 
-    getLogo, 
-    getThemeMode, 
-    setUserTheme, 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const {
+    getTitle,
+    getLogo,
+    getThemeMode,
+    setUserTheme,
     user,
+    setUser,
     webAppConfig,
-    loading 
+    loading,
   } = useAppConfig();
 
   const handleDrawerToggle = () => {
@@ -53,7 +61,7 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
 
   const handleThemeToggle = async () => {
     if (isTogglingTheme) return;
-    
+
     setIsTogglingTheme(true);
     try {
       const currentMode = getThemeMode();
@@ -74,16 +82,45 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     handleMenuClose();
-    if (onLogout) {
-      onLogout();
+    await logoutUser();
+    navigate('/login');
+  };
+
+  const handleAvatarClick = () => {
+    handleMenuClose();
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingAvatar(true);
+    try {
+      const response = await uploadAvatar(file);
+      const avatarUrl = response.data?.avatar;
+      if (avatarUrl) {
+        setUser((prev) => (prev ? { ...prev, avatar: avatarUrl } : prev));
+        localStorage.setItem(
+          'user',
+          JSON.stringify({ ...user, avatar: avatarUrl }),
+        );
+      }
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   // Use actual MUI theme mode (resolved from 'auto' if needed)
   const isDarkMode = theme.palette.mode === 'dark';
-  
+
   // Get appropriate logo based on actual theme
   const getThemeLogo = () => {
     if (isDarkMode) {
@@ -91,14 +128,14 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
     }
     return getLogo('light') || getLogo('universal');
   };
-  
+
   const logoUrl = getThemeLogo();
   const currentMode = getThemeMode();
   const canToggle = webAppConfig?.['features.user_theme_switch']?.value !== false;
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: 'dashboard' },
-    { text: 'Settings', icon: <SettingsIcon />, path: 'settings' },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 
   const drawer = (
@@ -134,11 +171,10 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
-              selected={currentPage === item.path}
-              onClick={() => {
-                onNavigate(item.path);
-                setMobileOpen(false);
-              }}
+              component={Link}
+              to={item.path}
+              selected={location.pathname === item.path}
+              onClick={() => setMobileOpen(false)}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
@@ -151,6 +187,13 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
 
   return (
     <Box sx={{ display: 'flex' }}>
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        onChange={handleAvatarChange}
+      />
       <AppBar
         position="fixed"
         sx={{
@@ -169,13 +212,13 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Dashboard
+            AuthStart
           </Typography>
           {canToggle && (
             <Tooltip title={currentMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-              <IconButton 
-                color="inherit" 
-                onClick={handleThemeToggle} 
+              <IconButton
+                color="inherit"
+                onClick={handleThemeToggle}
                 sx={{ mr: 1 }}
                 disabled={isTogglingTheme}
               >
@@ -183,7 +226,7 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
               </IconButton>
             </Tooltip>
           )}
-          
+
           {/* User Menu */}
           {user && (
             <>
@@ -191,9 +234,15 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
                 color="inherit"
                 onClick={handleMenuOpen}
                 startIcon={
-                  <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                  </Avatar>
+                  isUploadingAvatar ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : user.avatar ? (
+                    <Avatar src={user.avatar} sx={{ width: 32, height: 32 }} />
+                  ) : (
+                    <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </Avatar>
+                  )
                 }
               >
                 {user.name || user.email}
@@ -211,6 +260,10 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
                   horizontal: 'right',
                 }}
               >
+                <MenuItem onClick={handleAvatarClick}>
+                  <AccountCircleIcon sx={{ mr: 1 }} />
+                  Upload avatar
+                </MenuItem>
                 <MenuItem onClick={handleLogout}>
                   <LogoutIcon sx={{ mr: 1 }} />
                   Logout
@@ -258,7 +311,7 @@ function Layout({ children, onLogout, onNavigate, currentPage }) {
         }}
       >
         <Toolbar />
-        {children}
+        <Outlet />
       </Box>
     </Box>
   );

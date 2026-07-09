@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAppConfig } from '../context/AppConfigContext';
+import useAppConfig from '../context/useAppConfig';
 
 /**
  * Component to dynamically update document title

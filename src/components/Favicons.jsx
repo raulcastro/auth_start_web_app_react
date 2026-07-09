@@ -12,7 +12,7 @@ import { STORAGE_BASE_URL } from '../services/api';
  * with static files in storage.
  */
 function Favicons() {
-  const [faviconsLoaded, setFaviconsLoaded] = useState(false);
+  const [, setFaviconsLoaded] = useState(false);
 
   useEffect(() => {
     const loadFavicons = async () => {
@@ -142,7 +142,7 @@ function Favicons() {
       shortcut.rel = 'shortcut icon';
       shortcut.href = faviconUrl;
       document.head.appendChild(shortcut);
-    } catch (error) {
+    } catch {
       // Keep default favicon.svg if everything fails
       console.log('Using default favicon');
     }

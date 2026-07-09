@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
-  Paper,
   Typography,
   Card,
   CardContent,
@@ -18,57 +17,27 @@ import {
   Grid,
 } from '@mui/material';
 import { Save as SaveIcon } from '@mui/icons-material';
-import { useAppConfig } from '../context/AppConfigContext';
-import { updateUserPreferences } from '../services/api';
+import useAppConfig from '../context/useAppConfig';
 
 function Settings() {
-  const { userPreferences, webAppConfig, getThemeMode } = useAppConfig();
-  const [themeMode, setThemeMode] = useState('');
-  const [fontSize, setFontSize] = useState('');
+  const {
+    userPreferences,
+    webAppConfig,
+    getThemeMode,
+    saveUserPreferences,
+    isDense,
+  } = useAppConfig();
+
+  const [themeMode, setThemeMode] = useState('light');
+  const [fontSize, setFontSize] = useState('16');
   const [denseLayout, setDenseLayout] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  // Initialize values from user preferences
-  useEffect(() => {
-    if (userPreferences) {
-      setThemeMode(userPreferences['theme.mode']?.value || getThemeMode() || 'light');
-      setFontSize(userPreferences['typography.base_font_size']?.value || '16');
-      setDenseLayout(userPreferences['layout.dense']?.value === '1' || userPreferences['layout.dense']?.value === true);
-    }
-  }, [userPreferences, getThemeMode]);
-
-  const handleSave = async () => {
-    setLoading(true);
-    setSuccess('');
-    setError('');
-
-    try {
-      const preferences = {};
-      
-      if (canChangeTheme) {
-        preferences['theme.mode'] = themeMode;
-      }
-      if (canChangeFontSize) {
-        preferences['typography.base_font_size'] = fontSize;
-      }
-      if (canChangeDenseLayout) {
-        preferences['layout.dense'] = denseLayout ? '1' : '0';
-      }
-
-      await updateUserPreferences(preferences);
-      setSuccess('Preferences saved! Reloading...');
-      
-      // Reload after a short delay to apply changes
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (err) {
-      setError(err.message || 'Failed to save preferences');
-      setLoading(false);
-    }
-  };
+  // Only initialize local state once from the context to avoid race
+  // conditions that can overwrite the user's edits before they hit Save.
+  const initialized = useRef(false);
 
   // Helper to check if feature is enabled
   const isFeatureEnabled = (featureKey) => {
@@ -79,9 +48,56 @@ function Settings() {
   const canChangeTheme = isFeatureEnabled('features.user_theme_switch');
   const canChangeFontSize = isFeatureEnabled('features.user_font_size');
   const canChangeDenseLayout = isFeatureEnabled('features.user_dense_layout');
-
-  // Check if any preference is editable
   const hasEditablePreferences = canChangeTheme || canChangeFontSize || canChangeDenseLayout;
+
+  // Initialize values from user preferences once the config is loaded.
+  useEffect(() => {
+    if (initialized.current || !webAppConfig) {
+      return;
+    }
+
+    initialized.current = true;
+    const denseValue = userPreferences?.['layout.dense']?.value;
+    const userDense = denseValue === '1' || denseValue === true || denseValue === 1;
+
+    setThemeMode(userPreferences?.['theme.mode']?.value || getThemeMode() || 'light');
+    setFontSize(userPreferences?.['typography.base_font_size']?.value?.toString() || '16');
+    setDenseLayout(canChangeDenseLayout ? userDense : isDense);
+  }, [webAppConfig, userPreferences, getThemeMode, isDense, canChangeDenseLayout]);
+
+  const handleSave = async () => {
+    setLoading(true);
+    setSuccess('');
+    setError('');
+
+    try {
+      const preferences = {};
+
+      if (canChangeTheme) {
+        preferences['theme.mode'] = themeMode;
+      }
+      if (canChangeFontSize) {
+        preferences['typography.base_font_size'] = fontSize;
+      }
+      if (canChangeDenseLayout) {
+        preferences['layout.dense'] = denseLayout;
+      }
+
+      await saveUserPreferences(preferences);
+      setSuccess('Preferences saved successfully.');
+
+      // Wait for MUI to finish the current paint, then reload the page so the
+      // theme/font/spacing applied by AppConfigProvider takes effect from the
+      // persisted preferences (no manual refresh required).
+      setTimeout(() => {
+        window.location.reload();
+      }, 600);
+    } catch (err) {
+      setError(err.message || 'Failed to save preferences');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -166,12 +182,12 @@ function Settings() {
               {canChangeDenseLayout && (
                 <Grid size={{ xs: 12 }}>
                   <FormControlLabel
-                    control={
+                    control={(
                       <Switch
-                        checked={denseLayout}
+                        checked={Boolean(denseLayout)}
                         onChange={(e) => setDenseLayout(e.target.checked)}
                       />
-                    }
+                    )}
                     label="Dense Layout (Compact spacing)"
                   />
                 </Grid>

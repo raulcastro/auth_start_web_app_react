@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Grid,
@@ -13,20 +13,21 @@ import {
   ListItemText,
   ListItemAvatar,
   Chip,
-  Divider,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   People as PeopleIcon,
-  TrendingUp as TrendingUpIcon,
   AccessTime as AccessTimeIcon,
-  CheckCircle as CheckCircleIcon,
   PersonAdd as PersonAddIcon,
   Login as LoginIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { useAppConfig } from '../context/AppConfigContext';
+import useAppConfig from '../context/useAppConfig';
+import { fetchProfile } from '../services/api';
 
 // Stat Card Component
 const StatCard = ({ title, value, icon, color, subtitle }) => (
@@ -81,10 +82,30 @@ const ActivityItem = ({ icon, primary, secondary, time, color }) => (
 );
 
 function Dashboard() {
-  const { user, getThemeMode } = useAppConfig();
+  const { user: cachedUser, getThemeMode } = useAppConfig();
   const isDark = getThemeMode() === 'dark';
 
-  // Sample data for charts
+  const [user, setUser] = useState(cachedUser);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchProfile();
+        setUser(profile);
+        localStorage.setItem('user', JSON.stringify(profile));
+      } catch (err) {
+        setError(err.message || 'Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  // Sample data for charts until backend provides user analytics
   const monthlyData = [
     { month: 'Jan', users: 120, logins: 80 },
     { month: 'Feb', users: 150, logins: 95 },
@@ -96,8 +117,8 @@ function Dashboard() {
 
   const userTypeData = [
     { id: 0, value: 65, label: 'API Users', color: '#1976d2' },
-    { id: 1, value: 25, label: 'Admins', color: '#dc004e' },
-    { id: 2, value: 10, label: 'Super Admins', color: '#ff9800' },
+    { id: 1, value: 25, label: 'Firebase Users', color: '#dc004e' },
+    { id: 2, value: 10, label: 'Admins', color: '#ff9800' },
   ];
 
   const activityData = [
@@ -109,11 +130,17 @@ function Dashboard() {
     { time: '20:00', activity: 40 },
   ];
 
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%' }}>
-      {/* Main content wrapper with padding */}
       <Box sx={{ mx: 3, pb: 5, pt: 3 }}>
-        {/* Welcome Section */}
         <Paper
           elevation={0}
           sx={{
@@ -134,59 +161,62 @@ function Dashboard() {
           </Typography>
         </Paper>
 
-        {/* Stats Cards */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
         <Grid container spacing={2} columns={12} sx={{ mb: 3 }}>
           <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <StatCard
-              title="Total Users"
-              value="1,234"
+              title="Account Status"
+              value={user?.is_active ? 'Active' : 'Inactive'}
               icon={<PeopleIcon />}
               color="#1976d2"
-              subtitle="+12% from last month"
+              subtitle={user?.email}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
             <StatCard
-              title="Active Today"
-              value="89"
-              icon={<TrendingUpIcon />}
-              color="#2e7d32"
-              subtitle="+5% from yesterday"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-            <StatCard
-              title="New Signups"
-              value="24"
-              icon={<PersonAddIcon />}
-              color="#ed6c02"
-              subtitle="This week"
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-            <StatCard
-              title="Total Logins"
-              value="8,542"
+              title="Auth Provider"
+              value={user?.user_type === 'firebase_user' ? 'Firebase' : 'Sanctum'}
               icon={<LoginIcon />}
+              color="#2e7d32"
+              subtitle={user?.roles?.join(', ') || 'user'}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title="Email Verified"
+              value={user?.email_verified_at ? 'Yes' : 'No'}
+              icon={<CheckCircleIcon />}
+              color={user?.email_verified_at ? '#2e7d32' : '#ed6c02'}
+              subtitle={user?.email_verified_at ? new Date(user.email_verified_at).toLocaleDateString() : 'Please verify your email'}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
+            <StatCard
+              title="Member Since"
+              value={user?.created_at ? new Date(user.created_at).toLocaleDateString() : '-'}
+              icon={<PersonAddIcon />}
               color="#9c27b0"
-              subtitle="All time"
+              subtitle="Welcome to AuthStart"
             />
           </Grid>
         </Grid>
 
-        {/* Charts Row */}
         <Grid container spacing={2} columns={12} sx={{ mb: 3 }}>
-          {/* Bar Chart */}
           <Grid size={{ xs: 12, md: 8 }}>
             <Card sx={{ height: 400 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom fontWeight="bold">
-                  User Growth & Logins
+                  Platform Growth & Logins (Sample)
                 </Typography>
                 <Box sx={{ height: 320 }}>
                   <BarChart
-                    xAxis={[{ 
-                      scaleType: 'band', 
+                    xAxis={[{
+                      scaleType: 'band',
                       data: monthlyData.map(d => d.month),
                       label: 'Month',
                     }]}
@@ -209,12 +239,11 @@ function Dashboard() {
             </Card>
           </Grid>
 
-          {/* Pie Chart */}
           <Grid size={{ xs: 12, md: 4 }}>
             <Card sx={{ height: 400 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom fontWeight="bold">
-                  User Distribution
+                  User Distribution (Sample)
                 </Typography>
                 <Box sx={{ height: 320, display: 'flex', justifyContent: 'center' }}>
                   <PieChart
@@ -237,18 +266,16 @@ function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* Bottom Row */}
         <Grid container spacing={2} columns={12}>
-          {/* Activity Chart */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom fontWeight="bold">
-                  Activity Timeline (Today)
+                  Activity Timeline (Sample)
                 </Typography>
                 <Box sx={{ height: 250 }}>
                   <LineChart
-                    xAxis={[{ 
+                    xAxis={[{
                       data: activityData.map(d => d.time),
                       scaleType: 'point',
                       label: 'Time',
@@ -268,7 +295,6 @@ function Dashboard() {
             </Card>
           </Grid>
 
-          {/* Recent Activity */}
           <Grid size={{ xs: 12, md: 6 }}>
             <Card>
               <CardContent>
@@ -278,34 +304,24 @@ function Dashboard() {
                 <List>
                   <ActivityItem
                     icon={<PersonAddIcon />}
-                    primary="New user registered"
-                    secondary="john@example.com"
-                    time="2 minutes ago"
+                    primary="Profile updated"
+                    secondary={user?.email}
+                    time="Just now"
                     color="#1976d2"
                   />
-                  <Divider variant="inset" component="li" />
                   <ActivityItem
                     icon={<LoginIcon />}
                     primary="User logged in"
-                    secondary="sarah@example.com"
-                    time="15 minutes ago"
+                    secondary={user?.email}
+                    time="Today"
                     color="#2e7d32"
                   />
-                  <Divider variant="inset" component="li" />
                   <ActivityItem
                     icon={<CheckCircleIcon />}
-                    primary="Profile updated"
-                    secondary="mike@example.com"
-                    time="1 hour ago"
-                    color="#ed6c02"
-                  />
-                  <Divider variant="inset" component="li" />
-                  <ActivityItem
-                    icon={<PeopleIcon />}
-                    primary="New admin created"
-                    secondary="admin@authstart.com"
-                    time="3 hours ago"
-                    color="#9c27b0"
+                    primary="Email verification"
+                    secondary={user?.email_verified_at ? 'Verified' : 'Pending'}
+                    time="Today"
+                    color={user?.email_verified_at ? '#2e7d32' : '#ed6c02'}
                   />
                 </List>
               </CardContent>
@@ -313,7 +329,6 @@ function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* System Status */}
         <Paper sx={{ mt: 3, p: 3 }} elevation={1}>
           <Typography variant="h6" gutterBottom fontWeight="bold">
             System Status
@@ -333,12 +348,12 @@ function Dashboard() {
             <Grid size={{ xs: 12, sm: 4 }}>
               <Box>
                 <Typography variant="body2" color="textSecondary">
-                  Database Connections
+                  Service Health
                 </Typography>
                 <Typography variant="h6" fontWeight="bold" color="info.main">
-                  12/50
+                  Healthy
                 </Typography>
-                <LinearProgress variant="determinate" value={24} color="info" sx={{ mt: 1 }} />
+                <LinearProgress variant="determinate" value={100} color="info" sx={{ mt: 1 }} />
               </Box>
             </Grid>
             <Grid size={{ xs: 12, sm: 4 }}>
