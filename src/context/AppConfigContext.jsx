@@ -27,6 +27,7 @@ export const AppConfigProvider = ({ children }) => {
   // User preferences from API (with localStorage cache)
   const [userPreferences, setUserPreferences] = useState(() => getStoredUserPreferences());
 
+  // Load public config, web config and user preferences on mount.
   useEffect(() => {
     const loadConfig = async () => {
       const data = await fetchAppConfig();
@@ -168,28 +169,30 @@ export const AppConfigProvider = ({ children }) => {
     });
   }, [fontSize, isDense, themeMode, webAppConfig]);
 
-  // Centralized preference save: updates backend, local state and localStorage.
+  // Centralized preference save: updates backend, localStorage and React state.
+  // localStorage is updated synchronously so a subsequent page reload sees the
+  // latest values immediately (React state updates may be batched).
   const saveUserPreferences = useCallback(async (preferences) => {
     const response = await updateUserPreferences(preferences);
     const updated = response?.data?.data || {};
 
-    setUserPreferences((prev) => {
-      const merged = { ...prev };
-      Object.keys(updated).forEach((key) => {
-        const nextValue = updated[key];
-        // Backend may return either { value, type, label, ... } or a plain value.
-        if (nextValue && typeof nextValue === 'object' && 'value' in nextValue) {
-          merged[key] = nextValue;
-        } else {
-          merged[key] = { ...(merged[key] || {}), value: nextValue };
-        }
-      });
-      localStorage.setItem('user_preferences', JSON.stringify(merged));
-      return merged;
+    const merged = { ...userPreferences };
+    Object.keys(updated).forEach((key) => {
+      const nextValue = updated[key];
+      // Backend may return either { value, type, label, ... } or a plain value.
+      if (nextValue && typeof nextValue === 'object' && 'value' in nextValue) {
+        merged[key] = nextValue;
+      } else {
+        merged[key] = { ...(merged[key] || {}), value: nextValue };
+      }
     });
 
+    // Synchronous write so a reload right after this call reads the new data.
+    localStorage.setItem('user_preferences', JSON.stringify(merged));
+    setUserPreferences(merged);
+
     return response;
-  }, []);
+  }, [userPreferences]);
 
   // Save user theme preference
   const setUserTheme = useCallback(async (mode) => {

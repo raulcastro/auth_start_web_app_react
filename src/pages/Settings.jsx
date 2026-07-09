@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -35,10 +35,6 @@ function Settings() {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  // Only initialize local state once from the context to avoid race
-  // conditions that can overwrite the user's edits before they hit Save.
-  const initialized = useRef(false);
-
   // Helper to check if feature is enabled
   const isFeatureEnabled = (featureKey) => {
     const value = webAppConfig?.[featureKey]?.value;
@@ -50,13 +46,14 @@ function Settings() {
   const canChangeDenseLayout = isFeatureEnabled('features.user_dense_layout');
   const hasEditablePreferences = canChangeTheme || canChangeFontSize || canChangeDenseLayout;
 
-  // Initialize values from user preferences once the config is loaded.
+  // Keep local form state in sync with the context preferences.
+  // The context loads from localStorage immediately and refreshes from the API,
+  // so this also fixes stale selects after an auto-reload.
   useEffect(() => {
-    if (initialized.current || !webAppConfig) {
+    if (!webAppConfig) {
       return;
     }
 
-    initialized.current = true;
     const denseValue = userPreferences?.['layout.dense']?.value;
     const userDense = denseValue === '1' || denseValue === true || denseValue === 1;
 

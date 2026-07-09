@@ -67,6 +67,9 @@ function Layout() {
       const currentMode = getThemeMode();
       const newMode = currentMode === 'dark' ? 'light' : 'dark';
       await setUserTheme(newMode);
+
+      // Reload so the MUI theme is rebuilt from the persisted preference.
+      window.location.reload();
     } catch (error) {
       console.error('Failed to toggle theme:', error);
     } finally {
