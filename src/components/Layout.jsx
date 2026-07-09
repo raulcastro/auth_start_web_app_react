@@ -24,6 +24,7 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   Settings as SettingsIcon,
+  Person as PersonIcon,
   Brightness4 as Brightness4Icon,
   Brightness7 as Brightness7Icon,
   Logout as LogoutIcon,
@@ -138,6 +139,7 @@ function Layout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+    { text: 'Profile', icon: <PersonIcon />, path: '/profile' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 

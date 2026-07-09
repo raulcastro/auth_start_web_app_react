@@ -11,6 +11,7 @@ import SignupGuard from './SignupGuard';
 const Register = lazy(() => import('../pages/Register'));
 const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Settings = lazy(() => import('../pages/Settings'));
+const Profile = lazy(() => import('../pages/Profile'));
 
 function AppRoutes() {
   return (
@@ -60,6 +61,14 @@ function AppRoutes() {
           element={
             <Suspense fallback={<PageLoader />}>
               <Settings />
+            </Suspense>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Profile />
             </Suspense>
           }
         />
